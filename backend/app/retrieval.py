@@ -52,3 +52,9 @@ def search(query: str, k: int = 4):
             (fts_query, k),
         ).fetchall()
     return [dict(r) for r in rows]
+def list_chunks(kind: str):
+    with get_conn() as c:
+        rows = c.execute(
+            "SELECT id, title, text, expires FROM chunks WHERE kind = ?", (kind,)
+        ).fetchall()
+    return [dict(r) for r in rows]

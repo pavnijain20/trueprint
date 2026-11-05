@@ -1,4 +1,4 @@
-import os, re, json, hashlib
+import os, re, json, hashlib, time
 from pathlib import Path
 from google import genai
 from google.genai import types
@@ -10,6 +10,7 @@ CACHE_FILE.parent.mkdir(exist_ok=True)
 _cache = json.loads(CACHE_FILE.read_text()) if CACHE_FILE.exists() else {}
 _client = genai.Client(api_key=os.getenv("LLM_API_KEY"))
 MODEL = os.getenv("LLM_MODEL", "gemini-flash-latest")
+FALLBACK = os.getenv("LLM_FALLBACK_MODEL", "")
 
 
 def redact(text: str) -> str:
@@ -29,27 +30,31 @@ def _extract_json(raw: str):
         return None
 
 
-def call_llm(system: str, user: str, retries: int = 1):
-    """Returns parsed JSON dict, or None if the model never returns valid JSON."""
+def call_llm(system: str, user: str, retries: int = 3):
+    """Returns parsed JSON dict, or None if every attempt fails.
+    Retries with a short wait, then tries the fallback model."""
     key = hashlib.sha256((MODEL + system + user).encode()).hexdigest()
     if key in _cache:
         return _cache[key]
-    for _ in range(retries + 1):
-        try:
-            resp = _client.models.generate_content(
-                model=MODEL,
-                contents=redact(user),
-                config=types.GenerateContentConfig(
-                    system_instruction=system,
-                    response_mime_type="application/json",
-                    max_output_tokens=1500,
-                ),
-            )
-            data = _extract_json(resp.text or "")
-            if data is not None:
-                _cache[key] = data
-                CACHE_FILE.write_text(json.dumps(_cache))
-                return data
-        except Exception as e:  # API down, rate limit, etc.
-            print("LLM error:", e)
+    models = [MODEL] + ([FALLBACK] if FALLBACK and FALLBACK != MODEL else [])
+    for model in models:
+        for attempt in range(retries):
+            try:
+                resp = _client.models.generate_content(
+                    model=model,
+                    contents=redact(user),
+                    config=types.GenerateContentConfig(
+                        system_instruction=system,
+                        response_mime_type="application/json",
+                        max_output_tokens=1500,
+                    ),
+                )
+                data = _extract_json(resp.text or "")
+                if data is not None:
+                    _cache[key] = data
+                    CACHE_FILE.write_text(json.dumps(_cache))
+                    return data
+            except Exception as e:
+                print(f"LLM error ({model}, try {attempt + 1}):", str(e)[:120])
+            time.sleep(2 * (attempt + 1))
     return None  # caller shows "needs human check"
