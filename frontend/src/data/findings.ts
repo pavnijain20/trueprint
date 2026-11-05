@@ -139,7 +139,7 @@ export const findings = [
     suggestedFix: 'Change to “updated Team Workspace Planning Guide”.',
     confidence: 0.88,
     isAI: true,
-    status: 'open',
+    status: 'accepted',
   },
   {
     id: 'email-tone-1',
@@ -167,7 +167,7 @@ export const findings = [
     suggestedFix: 'Use the approved signature block for this message template.',
     confidence: 0.96,
     isAI: true,
-    status: 'open',
+    status: 'accepted',
   },
   {
     id: 'toolkit-terminology-1',

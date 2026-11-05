@@ -21,6 +21,26 @@ export interface Draft {
   content: string
 }
 
+export interface Comment {
+  id: string
+  draftId: string
+  findingId?: string
+  authorName: string
+  authorRole: Role
+  text: string
+  createdAt: string
+}
+
+export interface Decision {
+  id: string
+  draftId: string
+  type: 'approved' | 'changes_requested'
+  byName: string
+  byRole: Role
+  note?: string
+  createdAt: string
+}
+
 export type FindingSeverity = 'low' | 'medium' | 'high'
 export type FindingStatus = 'open' | 'accepted' | 'dismissed'
 
