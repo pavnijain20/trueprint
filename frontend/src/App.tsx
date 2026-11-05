@@ -1,6 +1,9 @@
-import { Link, Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Layout } from './components/Layout'
+import { EmptyState } from './components/States'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { drafts } from './data/drafts'
 import { DraftEditorPage } from './pages/DraftEditorPage'
 import { DraftsPage } from './pages/DraftsPage'
 import { InsightsPage } from './pages/InsightsPage'
@@ -27,17 +30,64 @@ function NotFoundPage() {
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <main className="not-found" id="main-content" tabIndex={-1}>
         <p className="eyebrow">TRUEPRINT</p>
-        <h1>Page not found</h1>
-        <p>The page you requested does not exist.</p>
-        <Link className="text-link" to="/drafts">Go to drafts</Link>
+        <EmptyNotFound />
       </main>
     </>
   )
 }
 
+function EmptyNotFound() {
+  return (
+    <EmptyState
+      action={<Link className="text-link" to="/drafts">Go to drafts</Link>}
+      description="The page you requested does not exist."
+      headingLevel="h1"
+      title="Page not found"
+    />
+  )
+}
+
+function RouteTitle() {
+  const { pathname } = useLocation()
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (pathname === '/login') {
+      document.title = 'Log in | TruePrint'
+      return
+    }
+
+    if (pathname === '/drafts') {
+      document.title = 'Drafts | TruePrint'
+      return
+    }
+
+    if (pathname.startsWith('/drafts/')) {
+      const draft = drafts.find((item) => item.id === pathname.slice('/drafts/'.length))
+      document.title = draft ? `${draft.title} | TruePrint` : 'Draft not found | TruePrint'
+      return
+    }
+
+    if (pathname === '/knowledge-base') {
+      document.title = 'Knowledge Base | TruePrint'
+      return
+    }
+
+    if (pathname === '/insights') {
+      document.title = 'Insights | TruePrint'
+      return
+    }
+
+    document.title = 'Page not found | TruePrint'
+  }, [pathname, user])
+
+  return null
+}
+
 export default function App() {
   return (
     <AuthProvider>
+      <RouteTitle />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}>

@@ -25,14 +25,14 @@
 * { box-sizing: border-box; }
 
 body {
-	min-width: 320px;
+	min-width: 0;
 	min-height: 100vh;
 	margin: 0;
 }
 
-button, a { font: inherit; }
+button, a, input, select, textarea { font: inherit; }
 
-button:focus-visible, a:focus-visible {
+*:focus-visible {
 	outline: 3px solid var(--focus);
 	outline-offset: 3px;
 }
@@ -153,21 +153,35 @@ button:focus-visible, a:focus-visible {
 	background: var(--paper);
 }
 
+.topbar-account { display: flex; align-items: center; gap: 18px; }
 .user-summary { display: flex; align-items: center; gap: 12px; }
 .user-name { font-weight: 700; }
 .role-badge { padding: 5px 9px; background: #e7efe8; color: #174f3b; font-size: 0.75rem; font-weight: 750; text-transform: capitalize; }
+.role-switch { display: flex; align-items: center; gap: 7px; color: #34443a; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+.role-switch select { min-height: 36px; padding: 5px 26px 5px 8px; border: 1px solid #87978b; background: #fff; color: var(--ink); text-transform: capitalize; }
 .logout-button { padding: 8px 11px; border: 1px solid #bac8bd; background: var(--paper); color: var(--ink); cursor: pointer; }
 .logout-button:hover { border-color: var(--forest); background: #f1f6ef; }
 
 .page-content { width: min(100%, 1100px); flex: 1; padding: clamp(28px, 6vw, 68px); }
-.placeholder-page { max-width: 700px; padding-top: 12px; }
-.placeholder-page .eyebrow { margin-bottom: 18px; }
-.placeholder-page h1 { margin: 0 0 12px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 5vw, 3rem); font-weight: 500; }
-.placeholder-page p:last-child { margin: 0; color: var(--muted); line-height: 1.7; }
+.loading-state { display: grid; gap: 20px; }
+.loading-skeleton { display: block; background: #dfe6df; animation: state-pulse 1.2s ease-in-out infinite alternate; }
+.loading-title { width: min(70%, 440px); height: 42px; }
+.loading-block { min-height: 240px; }
+.loading-state-editor .loading-columns, .loading-state-cards .loading-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.loading-state-editor .loading-block { min-height: 360px; }
+.loading-state-cards .loading-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.loading-state-cards .loading-block { min-height: 180px; }
+.state-message { margin: 18px 0; padding: 28px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); }
+.state-message h1, .state-message h2 { margin: 0 0 8px; color: var(--ink); font-size: 1.15rem; }
+.state-message h1 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 5vw, 3rem); font-weight: 500; }
+.state-message p { margin: 0 0 16px; }
+.state-error { border-left: 4px solid #8a3d20; }
 .not-found { max-width: 700px; margin: 12vh auto; padding: 32px; }
 .not-found h1 { font-size: clamp(2rem, 5vw, 3rem); }
 .not-found > p:not(.eyebrow) { color: var(--muted); }
 .text-link { display: inline-block; margin-top: 12px; color: var(--forest-dark); font-weight: 700; text-underline-offset: 3px; }
+.text-button { padding: 0; border: 0; background: none; color: var(--forest-dark); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+@keyframes state-pulse { to { background: #edf1ed; } }
 
 @media (max-width: 680px) {
 	.app-shell { flex-direction: column; }
@@ -178,10 +192,15 @@ button:focus-visible, a:focus-visible {
 	.nav-link { flex: 0 0 auto; padding: 9px 10px; border-left: 0; border-bottom: 3px solid transparent; }
 	.nav-link[aria-current="page"] { border-bottom-color: var(--lime); }
 	.topbar { min-height: 64px; justify-content: space-between; gap: 8px; padding: 10px 16px; }
+	.topbar-account { flex-wrap: wrap; gap: 8px 12px; }
 	.user-summary { gap: 8px; }
+	.role-switch { gap: 5px; }
+	.role-switch select { max-width: 110px; }
 	.page-content { padding: 32px 22px; }
+	.loading-state-editor .loading-columns, .loading-state-cards .loading-cards { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+	.loading-skeleton { animation: none; }
 }

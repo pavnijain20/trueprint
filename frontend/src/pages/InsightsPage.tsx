@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { EmptyState, ErrorState, LoadingState } from '../components/States'
 import { comments } from '../data/comments'
 import { decisions } from '../data/decisions'
 import { drafts } from '../data/drafts'
@@ -67,20 +68,6 @@ function BarChart({ data, id, title }: { data: readonly BarDatum[]; id: string; 
           ))}
         </div>
       )}
-    </section>
-  )
-}
-
-function InsightsSkeleton() {
-  return (
-    <section aria-busy="true" aria-label="Loading insights" className="insights-loading" role="status">
-      <span className="skeleton-line skeleton-title" />
-      <div className="insight-skeleton-cards">
-        <span className="skeleton-block" />
-        <span className="skeleton-block" />
-        <span className="skeleton-block" />
-      </div>
-      <span className="sr-only">Loading governance insights…</span>
     </section>
   )
 }
@@ -171,7 +158,7 @@ export function InsightsPage() {
     )
   }
 
-  if (loading) return <InsightsSkeleton />
+  if (loading) return <LoadingState label="Loading governance insights" layout="cards" />
 
   function retry() {
     setLoading(true)
@@ -180,11 +167,11 @@ export function InsightsPage() {
 
   if (error || !data) {
     return (
-      <section className="state-message state-error" aria-labelledby="insights-error-title">
-        <h1 id="insights-error-title">Insights are unavailable</h1>
-        <p>{error ?? 'Insights could not be loaded. Please try again.'}</p>
-        <button className="secondary-button" onClick={retry} type="button">Retry</button>
-      </section>
+      <ErrorState
+        description={error ?? 'Insights could not be loaded. Please try again.'}
+        onRetry={retry}
+        title="Insights are unavailable"
+      />
     )
   }
 
@@ -193,10 +180,10 @@ export function InsightsPage() {
       <section className="insights-page" aria-labelledby="insights-title">
         <p className="eyebrow">GOVERNANCE REPORTING</p>
         <h1 id="insights-title">Insights</h1>
-        <div className="state-message" role="status">
-          <h2>No insight data yet</h2>
-          <p>Draft and finding activity will be summarized here when available.</p>
-        </div>
+        <EmptyState
+          description="Draft and finding activity will be summarized here when available."
+          title="No insight data yet"
+        />
       </section>
     )
   }

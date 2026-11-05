@@ -1,4 +1,5 @@
 import { Navigate, useNavigate } from 'react-router-dom'
+import { EmptyState } from '../components/States'
 import { useAuth } from '../context/AuthContext'
 import { demoUsers } from '../data/users'
 import type { Role } from '../types'
@@ -22,8 +23,13 @@ export function LoginPage() {
           <p className="brand-mark">TRUEPRINT</p>
           <h1 id="login-title">Brand, with intent.</h1>
           <p className="tagline">A clear path from first draft to confident publication.</p>
-          <div className="role-list" aria-label="Choose a demo role">
-            {demoUsers.map((demoUser) => (
+          <div className="role-list" aria-label="Choose a demo role" role="group">
+            {demoUsers.length === 0 ? (
+              <EmptyState
+                description="Demo roles are not available right now."
+                title="No demo roles available"
+              />
+            ) : demoUsers.map((demoUser) => (
               <button
                 className="role-button"
                 key={demoUser.id}

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import type { KeyboardEvent } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { CommentsPanel } from '../components/CommentsPanel'
 import { DecisionBar } from '../components/DecisionBar'
 import { DiffView } from '../components/DiffView'
 import { FindingsPanel } from '../components/FindingsPanel'
+import { EmptyState, ErrorState, LoadingState } from '../components/States'
 import { useAuth } from '../context/AuthContext'
 import { comments as allComments } from '../data/comments'
 import { findings as allFindings } from '../data/findings'
@@ -50,7 +51,7 @@ function DraftCopy({
               id={`draft-highlight-${finding.id}`}
               key={finding.id}
               onClick={() => onSelectFinding(finding.id)}
-              onKeyDown={(event: KeyboardEvent<HTMLElement>) => {
+              onKeyDown={(event: ReactKeyboardEvent<HTMLElement>) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()
                   onSelectFinding(finding.id)
@@ -90,14 +91,20 @@ function DraftEditor({ draft }: { draft: Draft }) {
     (finding) => finding.severity === 'high' && finding.status === 'open',
   )
 
-  function selectFinding(findingId: string, origin: 'card' | 'highlight') {
+  function selectFinding(
+    findingId: string,
+    origin: 'card' | 'highlight',
+    shouldFocus = false,
+  ) {
     setSelectedFindingId(findingId)
     const targetPrefix = origin === 'card' ? 'draft-highlight' : 'finding-card'
     window.requestAnimationFrame(() => {
-      document.getElementById(`${targetPrefix}-${findingId}`)?.scrollIntoView({
+      const target = document.getElementById(`${targetPrefix}-${findingId}`)
+      target?.scrollIntoView({
         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
         block: 'center',
       })
+      if (shouldFocus) target?.focus()
     })
   }
 
@@ -108,7 +115,7 @@ function DraftEditor({ draft }: { draft: Draft }) {
     setAnnouncement(status === 'accepted' ? 'Finding accepted' : 'Finding dismissed')
   }
 
-  function changeViewOnKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+  function changeViewOnKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
     const tabButtons = [...(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [])]
     const currentIndex = tabButtons.indexOf(event.currentTarget)
     let nextIndex: number | null = null
@@ -129,7 +136,46 @@ function DraftEditor({ draft }: { draft: Draft }) {
     setAnnouncement(decision.type === 'approved' ? 'Draft approved' : 'Changes requested')
   }
 
-  if (!user || !versionHistory) return null
+  useEffect(() => {
+    function handleEditorShortcut(event: KeyboardEvent) {
+      if (event.altKey || event.ctrlKey || event.metaKey) return
+      if (
+        event.target instanceof HTMLElement
+        && (event.target.isContentEditable || event.target.closest('input, textarea, select, [role="textbox"]'))
+      ) return
+
+      const key = event.key.toLocaleLowerCase()
+      if (key === 'j' || key === 'k') {
+        if (draftFindings.length === 0) return
+        event.preventDefault()
+        const selectedIndex = draftFindings.findIndex((finding) => finding.id === selectedFindingId)
+        const nextIndex = selectedIndex < 0
+          ? (key === 'j' ? 0 : draftFindings.length - 1)
+          : (selectedIndex + (key === 'j' ? 1 : -1) + draftFindings.length) % draftFindings.length
+        const nextFinding = draftFindings[nextIndex]
+        if (nextFinding) selectFinding(nextFinding.id, 'highlight', true)
+      } else if (key === 'a' || key === 'd') {
+        const selectedFinding = draftFindings.find((finding) => finding.id === selectedFindingId)
+        if (!selectedFinding) return
+        event.preventDefault()
+        changeFindingStatus(selectedFinding.id, key === 'a' ? 'accepted' : 'dismissed')
+      }
+    }
+
+    window.addEventListener('keydown', handleEditorShortcut)
+    return () => window.removeEventListener('keydown', handleEditorShortcut)
+  }, [draftFindings, selectedFindingId])
+
+  if (!user) return <EmptyState description="Sign in to review this draft." title="Sign in required" />
+  if (!versionHistory) {
+    return (
+      <EmptyState
+        action={<Link className="text-link" to="/drafts">Back to drafts</Link>}
+        description="The version history for this draft is not available."
+        title="Draft history unavailable"
+      />
+    )
+  }
 
   return (
     <div className="draft-editor-page">
@@ -203,6 +249,16 @@ function DraftEditor({ draft }: { draft: Draft }) {
         </section>
 
         <div className="editor-side-content">
+          <p className="editor-hint">Select a highlighted quote or a finding to see why it was flagged.</p>
+          <details className="keyboard-shortcuts">
+            <summary>Keyboard shortcuts</summary>
+            <ul>
+              <li><kbd>J</kbd> / <kbd>K</kbd> Move to next / previous finding</li>
+              <li><kbd>A</kbd> Accept the selected finding</li>
+              <li><kbd>D</kbd> Dismiss the selected finding</li>
+            </ul>
+            <p>Shortcuts are paused while typing in a text field.</p>
+          </details>
           <FindingsPanel
             findings={draftFindings}
             onSelectFinding={(findingId) => selectFinding(findingId, 'card')}
@@ -250,19 +306,6 @@ function DraftEditor({ draft }: { draft: Draft }) {
   )
 }
 
-function EditorSkeleton() {
-  return (
-    <section aria-busy="true" aria-label="Loading draft editor" className="editor-skeleton" role="status">
-      <span className="skeleton-line skeleton-title" />
-      <div className="skeleton-columns">
-        <span className="skeleton-block" />
-        <span className="skeleton-block" />
-      </div>
-      <span className="sr-only">Loading draft…</span>
-    </section>
-  )
-}
-
 export function DraftEditorPage() {
   const { id } = useParams<{ id: string }>()
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -301,14 +344,14 @@ export function DraftEditorPage() {
     setAttempt((currentAttempt) => currentAttempt + 1)
   }
 
-  if (loading) return <EditorSkeleton />
+  if (loading) return <LoadingState label="Loading draft" layout="editor" />
   if (error || !draft) {
     return (
-      <section className="state-message state-error" aria-labelledby="editor-error-title">
-        <h1 id="editor-error-title">Draft is unavailable</h1>
-        <p>{error ?? 'Draft could not be loaded. Please try again.'}</p>
-        <button className="secondary-button" onClick={retry} type="button">Retry</button>
-      </section>
+      <ErrorState
+        description={error ?? 'Draft could not be loaded. Please try again.'}
+        onRetry={retry}
+        title="Draft is unavailable"
+      />
     )
   }
 

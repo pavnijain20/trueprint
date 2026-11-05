@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { EmptyState, ErrorState, LoadingState } from '../components/States'
 import { guidelines } from '../data/guidelines'
 import type { GuidelineCategory, GuidelineDoc } from '../types'
 import './knowledge-base.css'
@@ -39,16 +40,6 @@ function matchesSearch(document: GuidelineDoc, query: string) {
     || document.sections.some((section) => (
       `${section.heading} ${section.body}`.toLocaleLowerCase().includes(normalizedQuery)
     ))
-}
-
-function KnowledgeBaseSkeleton() {
-  return (
-    <section aria-busy="true" aria-label="Loading guidelines" className="knowledge-loading" role="status">
-      <span className="skeleton-line skeleton-title" />
-      <span className="skeleton-block" />
-      <span className="sr-only">Loading brand guidelines…</span>
-    </section>
-  )
 }
 
 export function KnowledgeBasePage() {
@@ -127,7 +118,7 @@ export function KnowledgeBasePage() {
     navigate({ pathname: '/knowledge-base', search: `?doc=${encodeURIComponent(documentId)}`, hash: '' })
   }
 
-  if (loading) return <KnowledgeBaseSkeleton />
+  if (loading) return <LoadingState label="Loading brand guidelines" />
 
   return (
     <div className="knowledge-page">
@@ -143,18 +134,14 @@ export function KnowledgeBasePage() {
       </header>
 
       {error && (
-        <section className="state-message state-error" aria-labelledby="knowledge-error-title">
-          <h2 id="knowledge-error-title">Guidelines are unavailable</h2>
-          <p>{error}</p>
-          <button className="secondary-button" onClick={retry} type="button">Retry</button>
-        </section>
+        <ErrorState description={error} onRetry={retry} title="Guidelines are unavailable" />
       )}
 
       {!error && documents.length === 0 && (
-        <section className="state-message" aria-live="polite">
-          <h2>No guidelines available</h2>
-          <p>Approved reference documents will appear here when they are available.</p>
-        </section>
+        <EmptyState
+          description="Approved reference documents will appear here when they are available."
+          title="No guidelines available"
+        />
       )}
 
       {!error && documents.length > 0 && (
@@ -187,10 +174,10 @@ export function KnowledgeBasePage() {
             </form>
 
             {visibleDocuments.length === 0 ? (
-              <section className="knowledge-empty" aria-live="polite">
-                <h2>No matching guidelines</h2>
-                <p>Try a different search or category.</p>
-              </section>
+              <EmptyState
+                description="Try a different search or category."
+                title="No matching guidelines"
+              />
             ) : (
               <ul className="knowledge-document-list">
                 {visibleDocuments.map((document) => (
