@@ -58,3 +58,7 @@ def list_chunks(kind: str):
             "SELECT id, title, text, expires FROM chunks WHERE kind = ?", (kind,)
         ).fetchall()
     return [dict(r) for r in rows]
+def get_expiry(id: str):
+    with get_conn() as c:
+        row = c.execute("SELECT expires FROM chunks WHERE id = ?", (id,)).fetchone()
+    return row["expires"] if row else None

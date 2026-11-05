@@ -1,8 +1,10 @@
 import json
 from datetime import date
 from app.llm import call_llm
-from app.retrieval import search, list_chunks, get_chunk
+from app.retrieval import search, list_chunks, get_chunk, get_expiry
 from app.validator import validate_findings
+from app.expiry import flag_outdated
+from app.risk import risk_score
 
 SYSTEM = """You are a brand-compliance reviewer for a skincare brand.
 Use ONLY the APPROVED FACTS and GUIDELINES provided. Never use outside knowledge and never invent a source.
@@ -41,9 +43,10 @@ def build_prompt(draft: str) -> str:
 def review_text(draft: str) -> dict:
     data = call_llm(SYSTEM, build_prompt(draft))
     if data is None:
-        return {"findings": [], "error": "AI unavailable - needs human check"}
+        return {"findings": [], "risk": risk_score([]), "error": "AI unavailable - needs human check"}
     raw = data.get("findings", [])
     validated = validate_findings(raw, get_chunk)
+    validated = flag_outdated(validated, get_expiry)
     out = []
     for i, f in enumerate(validated, start=1):
         text = f.get("flagged_text", "")
@@ -53,4 +56,4 @@ def review_text(draft: str) -> dict:
         f["end"] = start + len(text) if start >= 0 else -1
         f.setdefault("status", "open")
         out.append(f)
-    return {"findings": out, "error": None}
+    return {"findings": out, "risk": risk_score(out), "error": None}
