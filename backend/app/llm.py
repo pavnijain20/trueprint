@@ -9,6 +9,8 @@ load_dotenv()
 CACHE_FILE = Path(".cache/llm_cache.json")
 CACHE_FILE.parent.mkdir(exist_ok=True)
 _cache = json.loads(CACHE_FILE.read_text()) if CACHE_FILE.exists() else {}
+DEMO_CACHE_FILE = Path(__file__).resolve().parent.parent / "demo_cache.json"
+_demo = json.loads(DEMO_CACHE_FILE.read_text()) if DEMO_CACHE_FILE.exists() else {}
 _lock = threading.Lock()
 _client = genai.Client(api_key=os.getenv("LLM_API_KEY"))
 MODEL = os.getenv("LLM_MODEL", "gemini-flash-latest")
@@ -35,9 +37,13 @@ def _extract_json(raw: str):
 def call_llm(system: str, user: str, retries: int = 3):
     """Returns parsed JSON dict, or None if every attempt fails.
     Retries with a short wait, then tries the fallback model."""
-    key = hashlib.sha256((MODEL + system + user).encode()).hexdigest()
-    if key in _cache:
-        return _cache[key]
+    key = hashlib.sha256((system + user).encode()).hexdigest()
+    old_key = hashlib.sha256((MODEL + system + user).encode()).hexdigest()
+    for k in (key, old_key):
+        if k in _cache:
+            return _cache[k]
+        if k in _demo:
+            return _demo[k]
     models = [MODEL] + ([FALLBACK] if FALLBACK and FALLBACK != MODEL else [])
     for model in models:
         for attempt in range(retries):
