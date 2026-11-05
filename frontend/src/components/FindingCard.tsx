@@ -1,6 +1,8 @@
 import type { KeyboardEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { AIBadge } from './AIBadge'
 import type { Finding, FindingStatus } from '../types'
+import { guidelines } from '../data/guidelines'
 
 interface FindingCardProps {
   finding: Finding
@@ -19,6 +21,9 @@ function handleActivationKey(event: KeyboardEvent<HTMLElement>, onSelect: () => 
 
 export function FindingCard({ finding, selected, onSelect, onStatusChange }: FindingCardProps) {
   const confidencePercent = Math.round(finding.confidence * 100)
+  const sourceSection = guidelines
+    .flatMap((document) => document.sections.map((section) => ({ document, section })))
+    .find(({ section }) => section.body === finding.sourceQuote)
 
   return (
     <article
@@ -43,7 +48,13 @@ export function FindingCard({ finding, selected, onSelect, onStatusChange }: Fin
 
       <blockquote className="source-quote">
         <p>{finding.sourceQuote}</p>
-        <cite>{finding.sourceName}</cite>
+        <cite>
+          {sourceSection ? (
+            <Link to={`/knowledge-base?doc=${encodeURIComponent(sourceSection.document.id)}#${sourceSection.section.id}`}>
+              {finding.sourceName}
+            </Link>
+          ) : finding.sourceName}
+        </cite>
       </blockquote>
 
       <div className="suggested-fix">

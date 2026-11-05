@@ -58,3 +58,16 @@ export interface Finding {
   isAI: boolean
   status: FindingStatus
 }
+
+export type GuidelineCategory = 'Voice' | 'Terminology' | 'Legal' | 'Visual'
+
+export interface GuidelineDoc {
+  id: string
+  title: string
+  category: GuidelineCategory
+  summary: string
+  version: string
+  updatedAt: string
+  owner: string
+  sections: { id: string; heading: string; body: string }[]
+}

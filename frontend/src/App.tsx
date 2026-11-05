@@ -1,32 +1,24 @@
 import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import type { Role } from './types'
 import { DraftEditorPage } from './pages/DraftEditorPage'
 import { DraftsPage } from './pages/DraftsPage'
+import { InsightsPage } from './pages/InsightsPage'
+import { KnowledgeBasePage } from './pages/KnowledgeBasePage'
 import { LoginPage } from './pages/LoginPage'
-import { PlaceholderPage } from './pages/PlaceholderPage'
 
 function ProtectedRoute() {
   const { user } = useAuth()
   return user ? <Layout /> : <Navigate to="/login" replace />
 }
 
-function RoleRoute({
-  allowedRoles,
-  title,
-  description,
-}: {
-  allowedRoles: readonly Role[]
-  title: string
-  description: string
-}) {
+function KnowledgeBaseRoute() {
   const { user } = useAuth()
 
   if (!user) return <Navigate to="/login" replace />
-  if (!allowedRoles.includes(user.role)) return <Navigate to="/drafts" replace />
+  if (user.role === 'author') return <Navigate to="/drafts" replace />
 
-  return <PlaceholderPage title={title} description={description} />
+  return <KnowledgeBasePage />
 }
 
 function NotFoundPage() {
@@ -52,26 +44,8 @@ export default function App() {
           <Route path="/" element={<Navigate to="/drafts" replace />} />
           <Route path="/drafts" element={<DraftsPage />} />
           <Route path="/drafts/:id" element={<DraftEditorPage />} />
-          <Route
-            path="/knowledge-base"
-            element={
-              <RoleRoute
-                allowedRoles={['reviewer', 'approver', 'admin']}
-                title="Knowledge Base"
-                description="Brand guidance and approved reference material will appear here."
-              />
-            }
-          />
-          <Route
-            path="/insights"
-            element={
-              <RoleRoute
-                allowedRoles={['approver', 'admin']}
-                title="Insights"
-                description="Publication and governance insights will appear here."
-              />
-            }
-          />
+          <Route path="/knowledge-base" element={<KnowledgeBaseRoute />} />
+          <Route path="/insights" element={<InsightsPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

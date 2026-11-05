@@ -1,4 +1,5 @@
 .drafts-page, .draft-editor-page { width: 100%; }
+.draft-editor-page { padding-bottom: 160px; }
 
 .section-heading {
   display: flex;
