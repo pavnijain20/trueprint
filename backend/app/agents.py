@@ -5,6 +5,7 @@ from app.retrieval import search, list_chunks, get_chunk, get_expiry
 from app.validator import validate_findings
 from app.expiry import flag_outdated
 from app.risk import risk_score
+from app.rules import rule_check
 
 SYSTEM = """You are a brand-compliance reviewer for a skincare brand.
 Use ONLY the APPROVED FACTS and GUIDELINES provided. Never use outside knowledge and never invent a source.
@@ -40,20 +41,34 @@ def build_prompt(draft: str) -> str:
     )
 
 
+def _inside(r, a):
+    return a["start"] >= 0 and a["start"] <= r["start"] and r["end"] <= a["end"]
+
+
 def review_text(draft: str) -> dict:
+    rule_findings = rule_check(draft, get_chunk)
+
+    ai_findings, error = [], None
     data = call_llm(SYSTEM, build_prompt(draft))
     if data is None:
-        return {"findings": [], "risk": risk_score([]), "error": "AI unavailable - needs human check"}
-    raw = data.get("findings", [])
-    validated = validate_findings(raw, get_chunk)
-    validated = flag_outdated(validated, get_expiry)
-    out = []
-    for i, f in enumerate(validated, start=1):
-        text = f.get("flagged_text", "")
-        start = draft.find(text) if text else -1
+        error = "AI unavailable - showing rule-based checks only; needs human check"
+    else:
+        validated = validate_findings(data.get("findings", []), get_chunk)
+        ai_findings = flag_outdated(validated, get_expiry)
+        for f in ai_findings:
+            text = f.get("flagged_text", "")
+            f["start"] = draft.find(text) if text else -1
+            f["end"] = f["start"] + len(text) if f["start"] >= 0 else -1
+            f["origin"] = "ai"
+
+    # drop a rule finding if an AI finding already covers it with the same source
+    rule_findings = [
+        r for r in rule_findings
+        if not any(_inside(r, a) and a.get("source", {}).get("id") == r["source"]["id"] for a in ai_findings)
+    ]
+
+    out = sorted(rule_findings + ai_findings, key=lambda f: f["start"])
+    for i, f in enumerate(out, start=1):
         f["id"] = f"f{i}"
-        f["start"] = start
-        f["end"] = start + len(text) if start >= 0 else -1
         f.setdefault("status", "open")
-        out.append(f)
-    return {"findings": out, "risk": risk_score(out), "error": None}
+    return {"findings": out, "risk": risk_score(out), "error": error}
