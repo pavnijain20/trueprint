@@ -7,9 +7,9 @@ REWRITE_SYSTEM = """You are an editor for a skincare brand.
 Rewrite the DRAFT so it fixes every listed ISSUE while keeping the writer's goal and message.
 Rules:
 - Use ONLY the APPROVED FACTS given. Do not add any new claim, number or benefit.
+- NEVER replace a removed claim with a different benefit. If the main claim cannot be supported by the approved facts, remove or soften that claim, keep the rest of the message (for example the call to action), and say what proof is missing.
 - Keep the length similar and the tone warm, honest and simple.
-- If an issue cannot be fixed because proof is missing from the approved facts, soften or remove that claim. Never invent support.
-Reply with JSON only: {"revised": "the full rewritten draft"}"""
+Reply with JSON only: {"revised": "the full rewritten draft", "missing_proof": "one sentence on what approved fact is needed to make the original claim, or empty if nothing is missing"}"""
 
 
 def _blocking(result: dict) -> list[dict]:
@@ -41,6 +41,7 @@ def self_correct(draft: str, max_attempts: int = 2) -> dict:
             return out
         check = review_text(revised)
         out["attempts"].append({"attempt": n, "revised": revised,
+                                "missing_proof": (data or {}).get("missing_proof", ""),
                                 "remaining": len(_blocking(check)), "risk": check["risk"]})
         out["suggested_draft"] = revised
         if not _blocking(check):
