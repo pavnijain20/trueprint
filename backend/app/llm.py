@@ -3,11 +3,13 @@ from pathlib import Path
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+import threading
 
 load_dotenv()
 CACHE_FILE = Path(".cache/llm_cache.json")
 CACHE_FILE.parent.mkdir(exist_ok=True)
 _cache = json.loads(CACHE_FILE.read_text()) if CACHE_FILE.exists() else {}
+_lock = threading.Lock()
 _client = genai.Client(api_key=os.getenv("LLM_API_KEY"))
 MODEL = os.getenv("LLM_MODEL", "gemini-flash-latest")
 FALLBACK = os.getenv("LLM_FALLBACK_MODEL", "")
@@ -51,8 +53,9 @@ def call_llm(system: str, user: str, retries: int = 3):
                 )
                 data = _extract_json(resp.text or "")
                 if data is not None:
-                    _cache[key] = data
-                    CACHE_FILE.write_text(json.dumps(_cache))
+                    with _lock:
+                        _cache[key] = data
+                        CACHE_FILE.write_text(json.dumps(_cache))
                     return data
             except Exception as e:
                 print(f"LLM error ({model}, try {attempt + 1}):", str(e)[:120])

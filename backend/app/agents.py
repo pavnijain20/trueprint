@@ -6,6 +6,7 @@ from app.validator import validate_findings
 from app.expiry import flag_outdated
 from app.risk import risk_score
 from app.rules import rule_check
+from concurrent.futures import ThreadPoolExecutor
 
 SYSTEM = """You are a brand-compliance reviewer for a skincare brand.
 Use ONLY the APPROVED FACTS and GUIDELINES provided. Never use outside knowledge and never invent a source.
@@ -40,26 +41,64 @@ def build_prompt(draft: str) -> str:
         f"GUIDELINES:\n{guide_txt}\n\nDRAFT:\n{draft}"
     )
 
+SYSTEM_VOICE = """You are the Brand Voice reviewer for a skincare brand.
+Use ONLY the GUIDELINES provided. Never invent a source.
+
+Report ONLY tone and style problems: shouting (all caps, many exclamation marks), hype, pressure tactics, or wording that clashes with the tone guideline. Do NOT report product-name or claim problems; other reviewers handle those.
+
+Every finding MUST include a source id from the provided guidelines and a quote copied EXACTLY (word for word) from that guideline's text. If you cannot cite a guideline, do not report the finding.
+
+For suggested_fix: keep the writer's goal and facts, only change the tone.
+
+Reply with JSON only, in this shape:
+{"findings": [{"category": "tone", "flagged_text": "exact words from the draft", "reason": "one plain sentence", "severity": "high|medium|low", "confidence": 0.0, "source": {"type": "guideline", "id": "...", "quote": "..."}, "suggested_fix": "..."}]}
+If there are no problems, reply {"findings": []}."""
+
+
+def build_voice_prompt(draft: str) -> str:
+    guides = list_chunks("guideline")
+    guide_txt = "\n".join(f'- id={g["id"]} | text: {g["text"]}' for g in guides)
+    return f"GUIDELINES:\n{guide_txt}\n\nDRAFT:\n{draft}"
+
 
 def _inside(r, a):
     return a["start"] >= 0 and a["start"] <= r["start"] and r["end"] <= a["end"]
 
 
+def _run_agent(system, prompt, draft):
+    data = call_llm(system, prompt)
+    if data is None:
+        return None
+    found = validate_findings(data.get("findings", []), get_chunk)
+    found = flag_outdated(found, get_expiry)
+    for f in found:
+        text = f.get("flagged_text", "")
+        f["start"] = draft.find(text) if text else -1
+        f["end"] = f["start"] + len(text) if f["start"] >= 0 else -1
+    return found
+
+
 def review_text(draft: str) -> dict:
     rule_findings = rule_check(draft, get_chunk)
 
-    ai_findings, error = [], None
-    data = call_llm(SYSTEM, build_prompt(draft))
-    if data is None:
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        fact_job = pool.submit(_run_agent, SYSTEM, build_prompt(draft), draft)
+        voice_job = pool.submit(_run_agent, SYSTEM_VOICE, build_voice_prompt(draft), draft)
+        fact, voice = fact_job.result(), voice_job.result()
+
+    ai_findings = []
+    for name, res in (("fact", fact), ("voice", voice)):
+        if res is not None:
+            for f in res:
+                f["origin"] = "ai"
+                f["agent"] = name
+                ai_findings.append(f)
+
+    error = None
+    if fact is None and voice is None:
         error = "AI unavailable - showing rule-based checks only; needs human check"
-    else:
-        validated = validate_findings(data.get("findings", []), get_chunk)
-        ai_findings = flag_outdated(validated, get_expiry)
-        for f in ai_findings:
-            text = f.get("flagged_text", "")
-            f["start"] = draft.find(text) if text else -1
-            f["end"] = f["start"] + len(text) if f["start"] >= 0 else -1
-            f["origin"] = "ai"
+    elif fact is None or voice is None:
+        error = "One AI agent was unavailable; results may be incomplete - needs human check"
 
     # drop a rule finding if an AI finding already covers it with the same source
     rule_findings = [
