@@ -1,1 +1,10 @@
 
+# Secrets and local files
+.env
+backend/.env
+.venv/
+backend/.venv/
+__pycache__/
+.cache/
+*.db
+node_modules/
