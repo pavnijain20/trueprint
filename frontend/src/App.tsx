@@ -2,6 +2,8 @@ import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import type { Role } from './types'
+import { DraftEditorPage } from './pages/DraftEditorPage'
+import { DraftsPage } from './pages/DraftsPage'
 import { LoginPage } from './pages/LoginPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 
@@ -48,8 +50,8 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Navigate to="/drafts" replace />} />
-          <Route path="/drafts" element={<PlaceholderPage title="Drafts" description="Your team's drafts will appear here." />} />
-          <Route path="/drafts/:id" element={<PlaceholderPage title="Draft editor" description="Review and refine a draft before publication." />} />
+          <Route path="/drafts" element={<DraftsPage />} />
+          <Route path="/drafts/:id" element={<DraftEditorPage />} />
           <Route
             path="/knowledge-base"
             element={
