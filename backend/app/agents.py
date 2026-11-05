@@ -21,6 +21,7 @@ Every finding MUST include a source id from the provided lists and a quote copie
 If you cannot cite a source, do not report the finding.
 
 For suggested_fix: keep the writer's goal. If no approved fact supports the exact claim, rewrite using the closest approved fact that fits the same goal, or say what proof is needed (for example: "Add an approved fact about acne results before making this claim"). Never change the topic.
+In suggested_fix, never add a benefit, ingredient, number or adjective (like "nourishing") that does not appear in the approved facts.
 
 Reply with JSON only, in this shape:
 {"findings": [{"category": "claim|tone|terminology", "flagged_text": "exact words from the draft",
@@ -49,6 +50,7 @@ Report ONLY tone and style problems: shouting (all caps, many exclamation marks)
 Every finding MUST include a source id from the provided guidelines and a quote copied EXACTLY (word for word) from that guideline's text. If you cannot cite a guideline, do not report the finding.
 
 For suggested_fix: keep the writer's goal and facts, only change the tone.
+Do not add any new benefit or claim.
 
 Reply with JSON only, in this shape:
 {"findings": [{"category": "tone", "flagged_text": "exact words from the draft", "reason": "one plain sentence", "severity": "high|medium|low", "confidence": 0.0, "source": {"type": "guideline", "id": "...", "quote": "..."}, "suggested_fix": "..."}]}

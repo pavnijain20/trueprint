@@ -19,3 +19,14 @@ from app.self_correct import self_correct
 @router.post("/self-correct")
 def self_correct_endpoint(body: ReviewIn):
     return self_correct(body.draft)
+
+from app.insights import compute_insights
+
+
+class InsightsIn(BaseModel):
+    events: list[dict]
+
+
+@router.post("/insights")
+def insights(body: InsightsIn):
+    return compute_insights(body.events)

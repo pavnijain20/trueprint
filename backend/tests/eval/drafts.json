@@ -1,8 +1,0 @@
-[
-  {"draft": "Clinically proven to remove acne in 7 days. Try GlowLeaf Serum today!", "expected": ["guide_02"]},
-  {"draft": "Enjoy free shipping on every order from our store.", "expected": ["fact_04"]},
-  {"draft": "Our Glow Leaf serum is dermatologist-tested on 30 volunteers.", "expected": ["guide_03"]},
-  {"draft": "BUY NOW!!! Our miracle GlowLeaf Serum will change your life forever!!!", "expected": ["guide_01", "guide_02"]},
-  {"draft": "GlowLeaf Serum is dermatologist-tested on 30 volunteers.", "expected": []},
-  {"draft": "GlowLeaf Serum is made without parabens and synthetic fragrance.", "expected": []}
-]
