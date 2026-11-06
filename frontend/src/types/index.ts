@@ -57,6 +57,8 @@ export interface Finding {
   confidence: number
   isAI: boolean
   status: FindingStatus
+  startOffset?: number
+  endOffset?: number
 }
 
 export type GuidelineCategory = 'Voice' | 'Terminology' | 'Legal' | 'Visual'

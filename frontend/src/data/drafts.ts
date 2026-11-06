@@ -64,4 +64,28 @@ The Team Planning Toolkit brings layout ideas, practical checklists, and convers
 
 Download the toolkit to get started.`,
   },
+  {
+    id: 'glowleaf-miracle',
+    title: 'GlowLeaf Serum: Miracle claim',
+    author: 'Maya Chen',
+    status: 'draft',
+    updatedAt: '2026-11-06T09:00:00Z',
+    content: 'Experience the miracle of GlowLeaf Serum.',
+  },
+  {
+    id: 'glowleaf-claims',
+    title: 'GlowLeaf Serum: Hydration and shipping',
+    author: 'Jordan Patel',
+    status: 'draft',
+    updatedAt: '2026-11-06T09:10:00Z',
+    content: 'Our Glow Leaf serum is clinically proven to hydrate. Free shipping on every order!',
+  },
+  {
+    id: 'glowleaf-urgency',
+    title: 'GlowLeaf Serum: Limited stock promotion',
+    author: 'Sam Rivera',
+    status: 'draft',
+    updatedAt: '2026-11-06T09:20:00Z',
+    content: 'BUY NOW!!! GlowLeaf Serum is selling out fast!!!',
+  },
 ] satisfies readonly Draft[]

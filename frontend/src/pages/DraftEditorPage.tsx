@@ -11,12 +11,23 @@ import { comments as allComments } from '../data/comments'
 import { findings as allFindings } from '../data/findings'
 import { drafts } from '../data/drafts'
 import { versions } from '../data/versions'
+import { mapBackendFinding, reviewDraft } from '../lib/api'
 import type { Decision, Draft, Finding, FindingStatus } from '../types'
 import './drafts.css'
 
-function findQuoteRanges(text: string, findings: readonly Finding[]) {
+function findQuoteRanges(text: string, findings: readonly Finding[], baseOffset: number) {
   return findings
-    .map((finding) => ({ finding, start: text.indexOf(finding.quote) }))
+    .map((finding) => {
+      const startOffset = finding.startOffset
+      const endOffset = finding.endOffset
+      const offsetStart = startOffset === undefined ? -1 : startOffset - baseOffset
+      const hasMatchingOffsets = startOffset !== undefined
+        && endOffset !== undefined
+        && offsetStart >= 0
+        && endOffset - startOffset === finding.quote.length
+        && text.slice(offsetStart, offsetStart + finding.quote.length) === finding.quote
+      return { finding, start: hasMatchingOffsets ? offsetStart : text.indexOf(finding.quote) }
+    })
     .filter((match) => match.start >= 0)
     .sort((first, second) => first.start - second.start)
 }
@@ -32,11 +43,24 @@ function DraftCopy({
   selectedFindingId: string | null
   onSelectFinding: (findingId: string) => void
 }) {
+  const paragraphs = content.split('\n\n').map((paragraph, index, allParagraphs) => ({
+    paragraph,
+    offset: allParagraphs
+      .slice(0, index)
+      .reduce((offset, previous) => offset + previous.length + 2, 0),
+  }))
+
   return (
     <div className="draft-copy">
-      {content.split('\n\n').map((paragraph, paragraphIndex) => {
-        const paragraphFindings = findings.filter((finding) => paragraph.includes(finding.quote))
-        const ranges = findQuoteRanges(paragraph, paragraphFindings)
+      {paragraphs.map(({ paragraph, offset: paragraphOffset }, paragraphIndex) => {
+        const paragraphFindings = findings.filter((finding) => {
+          const overlapsParagraph = finding.startOffset !== undefined
+            && finding.endOffset !== undefined
+            && finding.startOffset < paragraphOffset + paragraph.length
+            && finding.endOffset > paragraphOffset
+          return overlapsParagraph || paragraph.includes(finding.quote)
+        })
+        const ranges = findQuoteRanges(paragraph, paragraphFindings, paragraphOffset)
         const parts: React.ReactNode[] = []
         let cursor = 0
 
@@ -77,11 +101,16 @@ type EditorView = 'draft' | 'changes'
 
 function DraftEditor({ draft }: { draft: Draft }) {
   const { user } = useAuth()
+  const [draftText, setDraftText] = useState(draft.content)
   const [draftFindings, setDraftFindings] = useState<Finding[]>(() =>
     allFindings.filter((finding) => finding.draftId === draft.id).map((finding) => ({ ...finding })),
   )
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
+  const [reviewing, setReviewing] = useState(false)
+  const [reviewError, setReviewError] = useState<string | null>(null)
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null)
+  const [risk, setRisk] = useState<{ level: string; score: number } | null>(null)
   const [view, setView] = useState<EditorView>('draft')
   const [draftStatus, setDraftStatus] = useState(draft.status)
   const [decisions, setDecisions] = useState<Decision[]>([])
@@ -90,6 +119,31 @@ function DraftEditor({ draft }: { draft: Draft }) {
   const hasOpenHighFinding = draftFindings.some(
     (finding) => finding.severity === 'high' && finding.status === 'open',
   )
+
+  async function runReview() {
+    setReviewing(true)
+    setReviewError(null)
+    setReviewNotice(null)
+    setRisk(null)
+    setAnnouncement('Running AI review')
+    try {
+      const response = await reviewDraft(draftText)
+      setDraftFindings(response.findings.map((finding) => mapBackendFinding(finding, draft.id)))
+      setSelectedFindingId(null)
+      setRisk(response.risk)
+      setReviewNotice(response.error)
+      setAnnouncement('AI review complete')
+    } catch (reviewFailure) {
+      setReviewError(
+        reviewFailure instanceof Error
+          ? reviewFailure.message
+          : 'The AI review could not be completed. Please try again.',
+      )
+      setAnnouncement('AI review unavailable')
+    } finally {
+      setReviewing(false)
+    }
+  }
 
   function selectFinding(
     findingId: string,
@@ -197,6 +251,14 @@ function DraftEditor({ draft }: { draft: Draft }) {
             <h2 id="draft-content-heading">Draft content</h2>
             <span>{draftFindings.length} findings</span>
           </div>
+          <div className="draft-editor-field">
+            <label htmlFor="draft-text">Edit draft text</label>
+            <textarea
+              id="draft-text"
+              onChange={(event) => setDraftText(event.target.value)}
+              value={draftText}
+            />
+          </div>
           <div aria-label="Draft view" className="view-tabs" role="tablist">
             <button
               aria-controls="draft-tab-panel"
@@ -234,14 +296,14 @@ function DraftEditor({ draft }: { draft: Draft }) {
           >
             {view === 'draft' ? (
               <DraftCopy
-                content={versionHistory.current.content}
+                content={draftText}
                 findings={draftFindings}
                 onSelectFinding={(findingId) => selectFinding(findingId, 'highlight')}
                 selectedFindingId={selectedFindingId}
               />
             ) : (
               <DiffView
-                currentContent={versionHistory.current.content}
+                currentContent={draftText}
                 previousContent={versionHistory.previous.content}
               />
             )}
@@ -250,6 +312,34 @@ function DraftEditor({ draft }: { draft: Draft }) {
 
         <div className="editor-side-content">
           <p className="editor-hint">Select a highlighted quote or a finding to see why it was flagged.</p>
+          <div className="review-controls">
+            <button
+              aria-busy={reviewing}
+              className="primary-button"
+              disabled={reviewing}
+              onClick={() => void runReview()}
+              type="button"
+            >
+              {reviewing ? 'Reviewing...' : 'Run AI review'}
+            </button>
+            {risk && (
+              <span className="risk-badge">
+                Risk: {risk.level} ({risk.score})
+              </span>
+            )}
+          </div>
+          {reviewError && (
+            <ErrorState
+              description={reviewError}
+              onRetry={() => void runReview()}
+              title="AI review unavailable"
+            />
+          )}
+          {reviewNotice && (
+            <p className="review-notice" role="status">
+              AI unavailable, rule-based checks only. {reviewNotice}
+            </p>
+          )}
           <details className="keyboard-shortcuts">
             <summary>Keyboard shortcuts</summary>
             <ul>

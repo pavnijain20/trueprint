@@ -41,6 +41,9 @@ The TruePrint team`,
 The Team Planning Toolkit brings layout ideas and checklists together in one place. Start with your team's needs, then shape a setup that can change as you do.
 
 Download the toolkit.`,
+  'glowleaf-miracle': 'Discover the benefits of GlowLeaf Serum.',
+  'glowleaf-claims': 'Our GlowLeaf serum helps hydrate. Shipping details are available at checkout.',
+  'glowleaf-urgency': 'Discover GlowLeaf Serum and find the right option for your routine.',
 }
 
 export const versions: readonly DraftVersionHistory[] = drafts.map((draft) => {
