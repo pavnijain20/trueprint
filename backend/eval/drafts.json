@@ -1,12 +1,12 @@
 [
-  {"draft": "GlowLeaf Serum is dermatologist-tested on 30 volunteers.", "expected": []},
-  {"draft": "GlowLeaf Serum is made without parabens and synthetic fragrance.", "expected": []},
-  {"draft": "Hydrates skin for up to 24 hours in an in-house study of 25 participants. Meet GlowLeaf Serum.", "expected": []},
+  {"draft": "GlowLeaf Serum is a skincare serum from the GlowLeaf brand.", "expected": []},
+  {"draft": "Free shipping applies to orders above Rs 499 on GlowLeaf Serum.", "expected": []},
+  {"draft": "Learn more about GlowLeaf Serum on our product information page.", "expected": []},
   {"draft": "Meet GlowLeaf Serum, our new daily serum. We would love to hear what you think.", "expected": []},
-  {"draft": "Our team is excited to share GlowLeaf Serum with you this winter.", "expected": []},
-  {"draft": "GlowLeaf Serum is free from parabens and was dermatologist-tested on 30 volunteers.", "expected": []},
+  {"draft": "Enjoy 20% off GlowLeaf Serum in our Winter Sale!", "expected": ["F20"]},
+  {"draft": "Add GlowLeaf Serum to your skincare routine and share your feedback.", "expected": []},
 
-  {"draft": "Our Glow Leaf serum is dermatologist-tested on 30 volunteers.", "expected": ["guide_03"]},
+  {"draft": "Our Glow Leaf serum is great for your daily routine.", "expected": ["guide_03"]},
   {"draft": "Try glowleaf serum this winter.", "expected": ["guide_03"]},
   {"draft": "Glow leaf is now available in a new bottle.", "expected": ["guide_03"]},
   {"draft": "Why our customers love Glowleaf Serum.", "expected": ["guide_03"]},

@@ -52,6 +52,5 @@ Use neutral, non-guaranteeing wording:
 | F17 | Drafts should use clear and concise sentences. | Synthetic demo tone guide | Brand QA team | 2026-11-05 | 2027-11-05 |
 | F18 | Drafts should not imply that the product treats a medical condition. | Synthetic demo claims policy | Brand QA team | 2026-11-05 | 2027-11-05 |
 | F19 | The product name should remain consistent across promotional copy. | Synthetic demo brand brief | Brand QA team | 2026-11-05 | 2027-11-05 |
-| F20 | This demo brand kit is for evaluation and testing, not public product claims. | Synthetic demo brand brief | Brand QA team | 2026-11-05 | 2026-10-31 |
-
+| F20 | Winter Sale: 20% off GlowLeaf Serum until 2026-10-31. | Synthetic demo promotion record | Brand QA team | 2026-09-15 | 2026-10-31 |
 **Expiry test:** F20 intentionally has a past expiry date. It should be treated as expired by the evaluator.
