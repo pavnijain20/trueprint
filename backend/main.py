@@ -14,6 +14,9 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 app.include_router(router)
 app.include_router(workflow_router)
 
+@app.get("/")
+def root():
+    return {"name": "Trueprint API", "status": "running", "docs": "/docs", "health": "/health"}
 
 @app.get("/health")
 def health():
