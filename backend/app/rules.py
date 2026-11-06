@@ -3,7 +3,8 @@ import re
 NAME_SOURCE = "guide_03"      # product naming guideline
 BANNED_SOURCE = "guide_02"    # banned words guideline
 CORRECT_NAME = "GlowLeaf"
-BANNED_PATTERNS = [r"clinically proven", r"100% guaranteed", r"\bmiracle\b", r"\bcures?\b"]
+BANNED_PATTERNS = [r"clinically proven", r"100% guaranteed", r"\bmiracle\b", r"\bcures?\b",
+                   r"removes? acne", r"works for every skin type", r"doctors? recommend"]
 
 
 def _finding(draft, m, category, severity, reason, source_id, get_chunk, fix):

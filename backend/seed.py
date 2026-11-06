@@ -1,16 +1,27 @@
+import re
+from pathlib import Path
 from app.retrieval import init_db, add_chunk
 
+KIT = Path(__file__).parent / "data" / "brand_kit.md"
 init_db(reset=True)
 
-# Approved facts (expires = date after which the fact must be re-verified)
-add_chunk("fact_01", "fact", "Ingredients", "Formulated without parabens and synthetic fragrance.", "2027-06-30")
-add_chunk("fact_02", "fact", "Hydration", "Hydrates skin for up to 24 hours in an in-house study of 25 participants.", "2027-03-31")
-add_chunk("fact_03", "fact", "Testing", "Dermatologist-tested on 30 volunteers in 2025.", "2027-09-10")
-add_chunk("fact_04", "fact", "Shipping", "Free shipping on all orders above Rs 499.", "2026-06-30")  # expired on purpose
+add_chunk("guide_01", "guideline", "Tone",
+          "Tone rules: Use a friendly, clear, and helpful tone. Keep sentences simple and easy to understand. "
+          "Avoid ALL CAPS, excessive exclamation marks, and pressure-based language.")
+add_chunk("guide_02", "guideline", "Claims",
+          "Do not make medical, guaranteed, or unsupported product claims. Do not use these terms or claims unless "
+          "the team has valid supporting evidence and approval: miracle, cure, 100% guaranteed, clinically proven, "
+          "removes acne, works for every skin type, doctors recommend.")
+add_chunk("guide_03", "guideline", "Naming",
+          "Always spell the product name exactly as GlowLeaf Serum. Never write Glow Leaf Serum, glowleaf serum or Glowleaf Serum.")
+add_chunk("guide_04", "guideline", "Preferred terms",
+          "Preferred wording: learn more about GlowLeaf Serum; explore our product information; "
+          "add it to your skincare routine; share your feedback; supports your skincare routine.")
 
-# Brand guidelines
-add_chunk("guide_01", "guideline", "Tone", "Tone: warm, honest and simple. Avoid medical or miracle promises.")
-add_chunk("guide_02", "guideline", "Claims", "Never use the words cure, miracle, clinically proven or 100% guaranteed unless a matching approved fact exists.")
-add_chunk("guide_03", "guideline", "Naming", "Always write the product name as GlowLeaf Serum, never Glow Leaf or glowleaf.")
-
-print("Seeded kb.db")
+ROW = re.compile(r"^\|\s*(F\d+)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|", re.M)
+count = 0
+for fid, text, source, owner, verified, expires in ROW.findall(KIT.read_text(encoding="utf-8")):
+    text = text.replace("\u201c", '"').replace("\u201d", '"')
+    add_chunk(fid, "fact", fid, text, expires)
+    count += 1
+print(f"Seeded kb.db: 4 guidelines and {count} facts")

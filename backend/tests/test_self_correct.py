@@ -1,4 +1,10 @@
 from app import self_correct as sc
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _no_database(monkeypatch):
+    monkeypatch.setattr(sc, "list_chunks", lambda kind: [])
 
 BAD = {"findings": [{"validated": True, "severity": "high", "flagged_text": "x", "reason": "r"}], "risk": {}}
 GOOD = {"findings": [], "risk": {}}

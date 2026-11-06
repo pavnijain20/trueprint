@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-KNOWN = {"guide_01", "guide_02", "guide_03", "fact_01", "fact_02", "fact_03", "fact_04"}
+KNOWN = {"guide_01", "guide_02", "guide_03", "guide_04"} | {f"F{i:02d}" for i in range(1, 21)}
 DATA = json.loads((Path(__file__).resolve().parent.parent / "eval" / "drafts.json").read_text(encoding="utf-8"))
 
 

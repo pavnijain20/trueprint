@@ -18,14 +18,14 @@
   {"draft": "GlowLeaf Serum removes dark spots in two weeks.", "expected": ["guide_02"]},
   {"draft": "Doctors recommend GlowLeaf Serum for sensitive skin.", "expected": ["guide_02"]},
 
-  {"draft": "Enjoy free shipping on every order from our store.", "expected": ["fact_04"]},
-  {"draft": "Free shipping on all orders, no minimum, only this week.", "expected": ["fact_04"]},
+  {"draft": "Enjoy free shipping on every order from our store.", "expected": ["F04"]},
+  {"draft": "Free shipping on all orders, no minimum, only this week.", "expected": ["F04"]},
 
   {"draft": "BUY NOW!!! GlowLeaf Serum is selling out fast!!!", "expected": ["guide_01"]},
   {"draft": "Hurry, you will regret it if you miss this offer. Buy GlowLeaf Serum right now!", "expected": ["guide_01"]},
   {"draft": "OUR BEST SERUM EVER. GET IT BEFORE IT'S GONE.", "expected": ["guide_01"]},
 
   {"draft": "BUY NOW!!! Our miracle GlowLeaf Serum will change your life forever!!!", "expected": ["guide_01", "guide_02"]},
-  {"draft": "Our Glow Leaf serum is clinically proven to hydrate. Free shipping on every order!", "expected": ["guide_03", "guide_02", "fact_04"]},
+  {"draft": "Our Glow Leaf serum is clinically proven to hydrate. Free shipping on every order!", "expected": ["guide_03", "guide_02", "F04"]},
   {"draft": "Glow Leaf Serum: a miracle for your skin!!!", "expected": ["guide_03", "guide_02", "guide_01"]}
 ]
