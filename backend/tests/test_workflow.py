@@ -54,3 +54,12 @@ def test_approved_draft_is_locked_and_audit_is_kept(client):
     client.post(f"/api/drafts/{did}/decision", json={"type": "approved", "byName": "R", "byRole": "approver"})
     assert client.patch(f"/api/drafts/{did}", json={"content": "new"}).status_code == 409
     assert len(client.get("/api/audit").json()) >= 3
+
+def test_decision_works_even_if_not_submitted_yet(client):
+    did = new_draft(client)
+    r = client.post(f"/api/drafts/{did}/decision", json={"type": "changes_requested", "byName": "R", "byRole": "reviewer"})
+    assert r.status_code == 200
+    r2 = client.post(f"/api/drafts/{did}/decision", json={"type": "approved", "byName": "R", "byRole": "reviewer"})
+    assert r2.status_code == 200
+    data = client.get(f"/api/drafts/{did}").json()
+    assert data["draft"]["status"] == "approved" and len(data["activity"]) >= 3
