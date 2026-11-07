@@ -49,6 +49,7 @@ DEMO_DRAFTS = [
     ("Newsletter intro", "Our Glow Leaf serum is great for your daily routine."),
     ("Flash sale post", "BUY NOW!!! Our miracle GlowLeaf Serum will change your life forever!!!"),
     ("Clean example", "Meet GlowLeaf Serum, our new daily serum. Share your feedback with us."),
+    ("Product Page", "Product overview\n\nAdd approved product description, features, benefits, and verified product information here."),
 ]
 
 
