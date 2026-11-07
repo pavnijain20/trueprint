@@ -3,7 +3,6 @@ import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { EmptyState } from './components/States'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { drafts } from './data/drafts'
 import { DraftEditorPage } from './pages/DraftEditorPage'
 import { DraftsPage } from './pages/DraftsPage'
 import { InsightsPage } from './pages/InsightsPage'
@@ -63,8 +62,7 @@ function RouteTitle() {
     }
 
     if (pathname.startsWith('/drafts/')) {
-      const draft = drafts.find((item) => item.id === pathname.slice('/drafts/'.length))
-      document.title = draft ? `${draft.title} | TruePrint` : 'Draft not found | TruePrint'
+      document.title = 'Draft review | TruePrint'
       return
     }
 

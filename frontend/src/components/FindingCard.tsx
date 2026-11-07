@@ -7,6 +7,7 @@ import { guidelines } from '../data/guidelines'
 interface FindingCardProps {
   finding: Finding
   selected: boolean
+  disabled?: boolean
   onSelect: () => void
   onStatusChange: (status: FindingStatus) => void
 }
@@ -19,7 +20,7 @@ function handleActivationKey(event: KeyboardEvent<HTMLElement>, onSelect: () => 
   }
 }
 
-export function FindingCard({ finding, selected, onSelect, onStatusChange }: FindingCardProps) {
+export function FindingCard({ finding, selected, disabled = false, onSelect, onStatusChange }: FindingCardProps) {
   const confidencePercent = Math.round(finding.confidence * 100)
   const sourceSection = guidelines
     .flatMap((document) => document.sections.map((section) => ({ document, section })))
@@ -76,7 +77,7 @@ export function FindingCard({ finding, selected, onSelect, onStatusChange }: Fin
         <button
           aria-pressed={finding.status === 'accepted'}
           className="accept-button"
-          disabled={finding.status === 'accepted'}
+          disabled={disabled || finding.status !== 'open'}
           onClick={(event) => {
             event.stopPropagation()
             onStatusChange('accepted')
@@ -88,7 +89,7 @@ export function FindingCard({ finding, selected, onSelect, onStatusChange }: Fin
         <button
           aria-pressed={finding.status === 'dismissed'}
           className="dismiss-button"
-          disabled={finding.status === 'dismissed'}
+          disabled={disabled || finding.status !== 'open'}
           onClick={(event) => {
             event.stopPropagation()
             onStatusChange('dismissed')

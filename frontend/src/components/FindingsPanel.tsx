@@ -7,6 +7,7 @@ type FindingFilter = 'all' | FindingStatus
 interface FindingsPanelProps {
   findings: readonly Finding[]
   selectedFindingId: string | null
+  disabled?: boolean
   onSelectFinding: (findingId: string) => void
   onStatusChange: (findingId: string, status: FindingStatus) => void
 }
@@ -14,6 +15,7 @@ interface FindingsPanelProps {
 export function FindingsPanel({
   findings,
   selectedFindingId,
+  disabled = false,
   onSelectFinding,
   onStatusChange,
 }: FindingsPanelProps) {
@@ -53,6 +55,7 @@ export function FindingsPanel({
           {visibleFindings.map((finding) => (
             <FindingCard
               finding={finding}
+              disabled={disabled}
               key={finding.id}
               onSelect={() => onSelectFinding(finding.id)}
               onStatusChange={(status) => onStatusChange(finding.id, status)}

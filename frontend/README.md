@@ -11,7 +11,20 @@ npm run dev
 
 Vite prints the local URL when the server is ready.
 
-Set `VITE_API_URL` in a frontend `.env` file to the backend base URL (for example, copy `.env.example`). The review button sends drafts to `${VITE_API_URL}/review`.
+The frontend defaults to the live API at `https://trueprint-api-iciu.onrender.com`. Set `VITE_API_URL` in a frontend `.env` file to override it.
+
+Drafts and review workflows use these backend endpoints:
+
+- `GET /api/drafts` and `GET /api/drafts/{id}` load drafts and detail data.
+- `POST /api/drafts/{id}/review` runs an AI review.
+- `PATCH /api/drafts/{id}` saves draft content.
+- `PATCH /api/findings/{id}` updates one finding's status and reviewer attribution; dismissal requests include a required `reason`.
+- `POST /api/drafts/{id}/submit` submits a draft.
+- `POST /api/drafts/{id}/decision` records an approval or change request in Decision History.
+- `POST /api/drafts/{id}/comments` adds a comment.
+- `GET /api/audit` loads workspace activity, including accepted and dismissed findings.
+
+Draft listing accepts the API's `{ "value": [...], "Count": n }` response and the bare array currently returned by the live service. Draft details use the `draft`, `findings`, `comments`, `decisions`, and `versions` fields.
 
 ## Build and preview
 
@@ -32,6 +45,8 @@ Choose a role at login, or switch roles from the top bar without logging out.
 - **Approver** — resolve high-severity findings, review changes, comment, and approve or request changes.
 - **Admin** — use the full review flow, plus the Knowledge Base and Insights pages.
 
-## Demo data and storage
+## Live and mock data
 
-Users, drafts, comments, decisions, and guidelines are mock data bundled with the frontend. Draft AI review can optionally use the backend configured with `VITE_API_URL`; seeded findings remain available if it is not configured. Draft edits, finding decisions, comments, and approvals are local to the current page session. The selected demo role and Quick start dismissal are stored in browser `localStorage`.
+Draft listing, draft details, findings, comments, decisions, draft edits, submissions, AI reviews, and the Activity Feed are loaded from or sent to the backend. The Changes view uses version history returned by the backend and reports when no previous version is available.
+
+Insights intentionally uses bundled sample records; it is not live backend reporting. Demo login roles and the Knowledge Base also use frontend sample data. The selected demo role and Quick start dismissal are stored in browser `localStorage`.

@@ -210,6 +210,10 @@ export function InsightsPage() {
         </div>
       </header>
 
+      <p className="insights-data-source">
+        Sample data only: Insights use bundled mock records and do not reflect live backend activity.
+      </p>
+
       <section aria-label="Summary metrics" className="insight-summary">
         <article className="summary-card">
           <h2>Total drafts</h2>

@@ -120,6 +120,7 @@
 .document-heading > span { color: var(--muted); font-size: 0.8rem; }
 .draft-editor-field { display: grid; gap: 7px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
 .draft-editor-field label { color: #34443a; font-size: 0.82rem; font-weight: 750; }
+.draft-edit-actions { display: flex; justify-content: flex-end; gap: 10px; }
 .draft-editor-field textarea {
   width: 100%;
   min-height: 150px;

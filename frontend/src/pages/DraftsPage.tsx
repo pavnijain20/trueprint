@@ -1,21 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { findings } from '../data/findings'
 import type { DraftStatus, Role } from '../types'
 import { EmptyState, ErrorState, LoadingState } from '../components/States'
+import { getQuickStartDraftId } from '../lib/quickStart'
 import { useDraftsData } from './useDraftsData'
 import './drafts.css'
 
 type StatusFilter = 'all' | DraftStatus
 const quickStartKey = 'trueprint.quick-start.'
-
-const demoDraftByRole: Record<Role, string> = {
-  author: 'social-focus',
-  reviewer: 'spring-campaign',
-  approver: 'quarterly-release',
-  admin: 'product-page',
-}
 
 const quickStartSteps: Record<Role, readonly string[]> = {
   author: [
@@ -67,6 +60,9 @@ function formatDate(value: string) {
 export function DraftsPage() {
   const { user } = useAuth()
   const { data, loading, error, retry } = useDraftsData()
+  const quickStartDraftId = user
+    ? getQuickStartDraftId(data?.value ?? [], user.role)
+    : undefined
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
   const [dismissedRoles, setDismissedRoles] = useState<Record<Role, boolean>>(() => {
@@ -93,12 +89,14 @@ export function DraftsPage() {
     }
   }
 
-  const visibleDrafts = (data ?? []).filter((draft) => {
+  const visibleDrafts = (data?.value ?? []).filter((draft) => {
     const matchesStatus = statusFilter === 'all' || draft.status === statusFilter
     const query = search.trim().toLocaleLowerCase()
     const matchesSearch = !query || `${draft.title} ${draft.author}`.toLocaleLowerCase().includes(query)
     return matchesStatus && matchesSearch
   })
+  const draftCount = data?.Count ?? visibleDrafts.length
+  const isFiltered = statusFilter !== 'all' || Boolean(search.trim())
 
   return (
     <div className="drafts-page">
@@ -109,7 +107,11 @@ export function DraftsPage() {
           <p className="section-description">Review content and its brand guidance before publication.</p>
         </div>
         <span className="draft-total" aria-live="polite">
-          {loading ? 'Loading drafts' : `${visibleDrafts.length} ${visibleDrafts.length === 1 ? 'draft' : 'drafts'}`}
+          {loading
+            ? 'Loading drafts'
+            : isFiltered
+              ? `${visibleDrafts.length} of ${draftCount} drafts`
+              : `${draftCount} ${draftCount === 1 ? 'draft' : 'drafts'}`}
         </span>
       </header>
 
@@ -204,17 +206,13 @@ export function DraftsPage() {
       {!loading && !error && visibleDrafts.length > 0 && (
         <ul className="draft-list" aria-label="Drafts">
           {visibleDrafts.map((draft) => {
-            const openFindingCount = findings.filter(
-              (finding) => finding.draftId === draft.id && finding.status === 'open',
-            ).length
-
             return (
               <li key={draft.id}>
                 <Link className="draft-row" to={`/drafts/${draft.id}`}>
                   <span className="draft-main">
                     <span className="draft-title-line">
                       <span className="draft-title">{draft.title}</span>
-                      {user && draft.id === demoDraftByRole[user.role] && (
+                      {draft.id === quickStartDraftId && (
                         <span className="try-this-badge">Try this</span>
                       )}
                     </span>
@@ -222,7 +220,7 @@ export function DraftsPage() {
                   </span>
                   <span className={`status-badge status-${draft.status}`}>{formatStatus(draft.status)}</span>
                   <span className="finding-count">
-                    <strong>{openFindingCount}</strong> open {openFindingCount === 1 ? 'finding' : 'findings'}
+                    <strong>—</strong> open findings in detail
                   </span>
                   <span className="draft-date">
                     <span className="metadata-label">Updated</span>

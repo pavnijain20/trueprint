@@ -38,6 +38,7 @@
 .insight-table td { text-align: right; }
 .review-activity { margin-top: 16px; }
 .review-activity p { margin: 8px 0 0; color: var(--muted); line-height: 1.5; }
+.insights-data-source { margin: 0 0 16px; padding: 12px 14px; border-left: 4px solid #a56a16; background: #fff4df; color: #5a3b10; font-size: 0.9rem; font-weight: 700; line-height: 1.5; }
 .insight-disclaimer { margin: 20px 0 0; padding: 13px 15px; border-left: 4px solid var(--forest); background: #eaf1ec; color: #26382c; font-size: 0.9rem; font-weight: 700; line-height: 1.5; }
 .insights-loading { display: grid; gap: 20px; }
 .insight-skeleton-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }

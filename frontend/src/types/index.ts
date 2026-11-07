@@ -10,7 +10,7 @@ export interface DemoUser extends User {
   description: string
 }
 
-export type DraftStatus = 'draft' | 'in_review' | 'changes_requested' | 'approved'
+export type DraftStatus = string
 
 export interface Draft {
   id: string
@@ -21,12 +21,51 @@ export interface Draft {
   content: string
 }
 
+export interface DraftsResponse {
+  value: Draft[]
+  Count: number
+}
+
+export interface DraftVersion {
+  id: string
+  draftId: string
+  content: string
+  note?: string
+  createdAt?: string
+}
+
+export interface DraftDetail {
+  draft: Draft
+  findings: Finding[]
+  comments: Comment[]
+  decisions: Decision[]
+  versions: DraftVersion[]
+}
+
+export interface ReviewRiskContribution {
+  finding: string
+  category: string
+  severity: FindingSeverity
+  points: number
+}
+
+export interface ReviewRisk {
+  level: string
+  score: number
+  contributions: ReviewRiskContribution[]
+}
+
+export interface ReviewResponse {
+  findings: Finding[]
+  risk: ReviewRisk
+}
+
 export interface Comment {
   id: string
   draftId: string
   findingId?: string
   authorName: string
-  authorRole: Role
+  authorRole: string
   text: string
   createdAt: string
 }
@@ -34,15 +73,25 @@ export interface Comment {
 export interface Decision {
   id: string
   draftId: string
-  type: 'approved' | 'changes_requested'
+  type: string
   byName: string
-  byRole: Role
+  byRole: string
   note?: string
   createdAt: string
 }
 
+export interface ActivityEvent {
+  id: string
+  createdAt: string
+  actor: string
+  role: string
+  action: string
+  draftId: string
+  detail: string
+}
+
 export type FindingSeverity = 'low' | 'medium' | 'high'
-export type FindingStatus = 'open' | 'accepted' | 'dismissed'
+export type FindingStatus = string
 
 export interface Finding {
   id: string

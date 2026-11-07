@@ -1,4 +1,4 @@
-import { diffText } from '../lib/diff'
+import { decodeHtmlEntities, diffText } from '../lib/diff'
 
 export function DiffView({
   previousContent,
@@ -7,7 +7,10 @@ export function DiffView({
   previousContent: string
   currentContent: string
 }) {
-  const segments = diffText(previousContent, currentContent)
+  const segments = diffText(
+    decodeHtmlEntities(previousContent),
+    decodeHtmlEntities(currentContent),
+  )
   const hasChanges = segments.some((segment) => segment.type !== 'same')
 
   if (!hasChanges) {

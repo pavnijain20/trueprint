@@ -1,8 +1,15 @@
 export type DiffSegment =
   | { type: 'same' | 'added' | 'removed'; value: string }
 
+export function decodeHtmlEntities(text: string): string {
+  if (!text.includes('&')) return text
+  const textarea = document.createElement('textarea')
+  textarea.innerHTML = text
+  return textarea.value
+}
+
 function tokenize(text: string): string[] {
-  return text.match(/\s+|[^\s]+/g) ?? []
+  return text.match(/\s*[\p{L}\p{N}_]+|\s*[^\s\p{L}\p{N}_]+|\s+/gu) ?? []
 }
 
 export function diffText(previous: string, current: string): DiffSegment[] {
@@ -54,5 +61,58 @@ export function diffText(previous: string, current: string): DiffSegment[] {
     }
   }
 
-  return segments
+  const groupedSegments: DiffSegment[] = []
+  let removed = ''
+  let added = ''
+  let removedWhitespace = ''
+  let addedWhitespace = ''
+  let sharedWhitespace = ''
+
+  function flushEditBlock() {
+    if (removed) groupedSegments.push({ type: 'removed', value: removed })
+    if (added) groupedSegments.push({ type: 'added', value: added })
+    removed = ''
+    added = ''
+    removedWhitespace = ''
+    addedWhitespace = ''
+  }
+
+  for (const segment of segments) {
+    if (segment.type === 'same' && /^\s+$/.test(segment.value)) {
+      if (removed || added) sharedWhitespace += segment.value
+      else groupedSegments.push(segment)
+      continue
+    }
+
+    if (segment.type === 'same') {
+      flushEditBlock()
+      if (sharedWhitespace) {
+        groupedSegments.push({ type: 'same', value: sharedWhitespace })
+        sharedWhitespace = ''
+      }
+      groupedSegments.push(segment)
+      continue
+    }
+
+    if (sharedWhitespace) {
+      removedWhitespace += sharedWhitespace
+      addedWhitespace += sharedWhitespace
+      sharedWhitespace = ''
+    }
+
+    if (segment.type === 'removed') {
+      if (removed) removed += removedWhitespace
+      removedWhitespace = ''
+      removed += segment.value
+    } else {
+      if (added) added += addedWhitespace
+      addedWhitespace = ''
+      added += segment.value
+    }
+  }
+
+  flushEditBlock()
+  if (sharedWhitespace) groupedSegments.push({ type: 'same', value: sharedWhitespace })
+
+  return groupedSegments
 }

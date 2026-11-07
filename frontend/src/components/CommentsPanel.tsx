@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import type { Comment, Finding, User } from '../types'
+import type { Comment, Finding } from '../types'
 
 function relativeTime(value: string) {
   const elapsedSeconds = Math.round((new Date(value).getTime() - Date.now()) / 1000)
@@ -14,20 +14,19 @@ function relativeTime(value: string) {
 }
 
 export function CommentsPanel({
-  draftId,
-  initialComments,
+  comments,
   findings,
-  user,
+  onPost,
 }: {
-  draftId: string
-  initialComments: readonly Comment[]
+  comments: readonly Comment[]
   findings: readonly Finding[]
-  user: User
+  onPost: (text: string, findingId: string | null) => Promise<void>
 }) {
-  const [comments, setComments] = useState<Comment[]>(() => [...initialComments])
   const [text, setText] = useState('')
   const [findingId, setFindingId] = useState('')
   const [announcement, setAnnouncement] = useState('')
+  const [posting, setPosting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const threads = new Map<string, Comment[]>()
   comments.forEach((comment) => {
@@ -37,23 +36,23 @@ export function CommentsPanel({
     threads.set(key, thread)
   })
 
-  function postComment(event: FormEvent<HTMLFormElement>) {
+  async function postComment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const commentText = text.trim()
-    if (!commentText) return
-
-    const comment: Comment = {
-      id: `comment-${Date.now()}`,
-      draftId,
-      ...(findingId ? { findingId } : {}),
-      authorName: user.name,
-      authorRole: user.role,
-      text: commentText,
-      createdAt: new Date().toISOString(),
+    if (!commentText || posting) return
+    setPosting(true)
+    setError(null)
+    try {
+      await onPost(commentText, findingId || null)
+      setText('')
+      setAnnouncement('Comment posted')
+    } catch (postFailure) {
+      setError(
+        postFailure instanceof Error ? postFailure.message : 'The comment could not be posted.',
+      )
+    } finally {
+      setPosting(false)
     }
-    setComments((current) => [...current, comment])
-    setText('')
-    setAnnouncement('Comment posted')
   }
 
   return (
@@ -94,7 +93,7 @@ export function CommentsPanel({
         </div>
       )}
 
-      <form className="comment-form" onSubmit={postComment}>
+      <form className="comment-form" onSubmit={(event) => void postComment(event)}>
         <div className="comment-form-field">
           <label htmlFor="comment-finding">Attach to a finding (optional)</label>
           <select
@@ -117,8 +116,11 @@ export function CommentsPanel({
             value={text}
           />
         </div>
-        <button className="primary-button" disabled={!text.trim()} type="submit">Post</button>
+        <button className="primary-button" disabled={!text.trim() || posting} type="submit">
+          {posting ? 'Posting...' : 'Post'}
+        </button>
       </form>
+      {error && <p role="alert">{error}</p>}
       <p aria-atomic="true" aria-live="polite" className="sr-only">{announcement}</p>
     </section>
   )

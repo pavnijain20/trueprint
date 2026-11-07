@@ -4,23 +4,33 @@ import type { Decision, DraftStatus, User } from '../types'
 type DecisionType = Decision['type']
 
 export function DecisionBar({
-  draftId,
   status,
+  statusConfirmed,
   user,
   hasOpenHighFinding,
   onConfirm,
+  onSubmit,
+  submitting = false,
 }: {
-  draftId: string
   status: DraftStatus
+  statusConfirmed: boolean
   user: User
   hasOpenHighFinding: boolean
-  onConfirm: (decision: Decision) => void
+  onConfirm: (type: Decision['type'], note: string) => Promise<void>
+  onSubmit: () => Promise<void>
+  submitting?: boolean
 }) {
   const [action, setAction] = useState<DecisionType | null>(null)
   const [note, setNote] = useState('')
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const noteRef = useRef<HTMLTextAreaElement | null>(null)
   const dialogRef = useRef<HTMLDivElement | null>(null)
+  const canDecide = user.role === 'approver' || user.role === 'admin'
+  const canRequestChanges = user.role === 'reviewer' || canDecide
+  const canSubmit = user.role === 'author'
+  const canRecordDecision = statusConfirmed && status === 'in_review'
 
   useEffect(() => {
     if (!action) return
@@ -56,6 +66,7 @@ export function DecisionBar({
   function closeDialog() {
     setAction(null)
     setNote('')
+    setError(null)
     window.requestAnimationFrame(() => triggerRef.current?.focus())
   }
 
@@ -63,36 +74,65 @@ export function DecisionBar({
     triggerRef.current = trigger
     setAction(type)
     setNote('')
+    setError(null)
   }
 
-  function confirmDecision() {
-    if (!action || (action === 'changes_requested' && !note.trim())) return
-    const decision: Decision = {
-      id: `decision-${Date.now()}`,
-      draftId,
-      type: action,
-      byName: user.name,
-      byRole: user.role,
-      ...(note.trim() ? { note: note.trim() } : {}),
-      createdAt: new Date().toISOString(),
+  async function confirmDecision() {
+    if (!action || pending || !canRecordDecision
+      || (action === 'approved' && !canDecide)
+      || (action === 'changes_requested' && !canRequestChanges)
+      || (action === 'changes_requested' && !note.trim())) return
+    setPending(true)
+    setError(null)
+    try {
+      await onConfirm(action, note.trim())
+      closeDialog()
+    } catch (decisionFailure) {
+      setError(
+        decisionFailure instanceof Error
+          ? decisionFailure.message
+          : 'The decision could not be recorded.',
+      )
+    } finally {
+      setPending(false)
     }
-    onConfirm(decision)
-    closeDialog()
   }
 
-  const canDecide = user.role === 'approver' || user.role === 'admin'
-  const canRequestChanges = user.role === 'reviewer' || canDecide
+  async function submitDraft() {
+    if (pending || submitting) return
+    setPending(true)
+    setError(null)
+    try {
+      await onSubmit()
+    } catch (submitFailure) {
+      setError(
+        submitFailure instanceof Error
+          ? submitFailure.message
+          : 'The draft could not be submitted.',
+      )
+    } finally {
+      setPending(false)
+    }
+  }
+
   if (!canRequestChanges) {
-    const statusMessage = status === 'approved'
-      ? 'Draft approved'
-      : status === 'changes_requested'
-        ? 'Changes requested'
-        : 'Waiting for review'
+    const statusMessage = `Current status: ${status.replace('_', ' ')}`
     return (
       <aside className="decision-bar" aria-label="Review status">
         <div>
-          <p className="decision-status">{statusMessage}</p>
+          <p className="decision-status">{statusConfirmed ? statusMessage : 'Workflow status unconfirmed'}</p>
           <p className="decision-disclaimer">AI findings are suggestions. A human makes the final decision.</p>
+          {canSubmit && status !== 'in_review' && status !== 'approved' && (
+            <button
+              className="primary-button"
+              disabled={!statusConfirmed || pending || submitting}
+              onClick={() => void submitDraft()}
+              type="button"
+            >
+              {pending || submitting ? 'Submitting...' : 'Submit for review'}
+            </button>
+          )}
+          {error && <p role="alert">{error}</p>}
         </div>
       </aside>
     )
@@ -102,7 +142,9 @@ export function DecisionBar({
     <>
       <aside className="decision-bar" aria-label="Draft decision">
         <div className="decision-copy">
-          <p className="decision-status">Current status: {status.replace('_', ' ')}</p>
+          <p className="decision-status">
+            {statusConfirmed ? `Current status: ${status.replace('_', ' ')}` : 'Workflow status unconfirmed'}
+          </p>
           <p className="decision-disclaimer">AI findings are suggestions. A human makes the final decision.</p>
         </div>
         <div className="decision-actions">
@@ -111,7 +153,7 @@ export function DecisionBar({
               <button
                 aria-describedby={hasOpenHighFinding ? 'approval-disabled-reason' : undefined}
                 className="primary-button"
-                disabled={hasOpenHighFinding}
+                disabled={!canRecordDecision || hasOpenHighFinding || pending || submitting}
                 onClick={(event) => openDialog('approved', event.currentTarget)}
                 type="button"
               >
@@ -126,6 +168,7 @@ export function DecisionBar({
           )}
           <button
             className="secondary-button"
+            disabled={!canRecordDecision || pending || submitting}
             onClick={(event) => openDialog('changes_requested', event.currentTarget)}
             type="button"
           >
@@ -157,22 +200,27 @@ export function DecisionBar({
             <textarea
               aria-required={action === 'changes_requested'}
               id="decision-note"
+              disabled={pending}
               onChange={(event) => setNote(event.target.value)}
               ref={noteRef}
               rows={4}
               value={note}
             />
             <div className="dialog-actions">
-              <button className="logout-button" onClick={closeDialog} type="button">Cancel</button>
+              <button className="logout-button" disabled={pending} onClick={closeDialog} type="button">Cancel</button>
               <button
                 className="primary-button"
-                disabled={action === 'changes_requested' && !note.trim()}
-                onClick={confirmDecision}
+                disabled={!canRecordDecision || submitting || pending
+                  || (action === 'approved' && !canDecide)
+                  || (action === 'changes_requested' && !canRequestChanges)
+                  || (action === 'changes_requested' && !note.trim())}
+                onClick={() => void confirmDecision()}
                 type="button"
               >
-                Confirm {action === 'approved' ? 'approval' : 'request'}
+                {pending ? 'Saving...' : `Confirm ${action === 'approved' ? 'approval' : 'request'}`}
               </button>
             </div>
+            {error && <p role="alert">{error}</p>}
           </div>
         </div>
       )}

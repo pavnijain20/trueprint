@@ -1,19 +1,62 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
+import type { FormEvent as ReactFormEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { CommentsPanel } from '../components/CommentsPanel'
 import { DecisionBar } from '../components/DecisionBar'
 import { DiffView } from '../components/DiffView'
 import { FindingsPanel } from '../components/FindingsPanel'
 import { EmptyState, ErrorState, LoadingState } from '../components/States'
 import { useAuth } from '../context/AuthContext'
-import { comments as allComments } from '../data/comments'
-import { findings as allFindings } from '../data/findings'
-import { drafts } from '../data/drafts'
-import { versions } from '../data/versions'
-import { mapBackendFinding, reviewDraft } from '../lib/api'
-import type { Decision, Draft, Finding, FindingStatus } from '../types'
+import {
+  addDraftComment,
+  decideDraft,
+  DraftNotFoundError,
+  getActivityFeed,
+  getDraftDetail,
+  reviewDraft,
+  submitDraft,
+  updateDraftContent,
+  updateFinding,
+} from '../lib/api'
+import { decodeHtmlEntities } from '../lib/diff'
+import type { ActivityEvent, DraftDetail, Finding, FindingStatus } from '../types'
 import './drafts.css'
+
+function findPreviousVersion(
+  versions: DraftDetail['versions'],
+  currentContent: string,
+  currentUpdatedAt: string,
+) {
+  const currentTimestamp = Date.parse(currentUpdatedAt)
+  if (!Number.isFinite(currentTimestamp)) return undefined
+
+  const currentText = decodeHtmlEntities(currentContent)
+  const parsedVersions = versions.flatMap((version) => {
+    if (!version.createdAt) return []
+    const timestamp = Date.parse(version.createdAt)
+    return Number.isFinite(timestamp)
+      ? [{ version, timestamp, content: decodeHtmlEntities(version.content) }]
+      : []
+  })
+  if (parsedVersions.some((item) => item.timestamp === currentTimestamp && item.content !== currentText)) {
+    return undefined
+  }
+  const timestampedVersions = parsedVersions
+    .filter((item) => item.timestamp < currentTimestamp)
+    .sort((first, second) => second.timestamp - first.timestamp)
+
+  for (let index = 0; index < timestampedVersions.length;) {
+    const timestamp = timestampedVersions[index].timestamp
+    const sameTimestamp = timestampedVersions.filter((item) => item.timestamp === timestamp)
+    const distinctContents = new Set(sameTimestamp.map((item) => item.content))
+    if (distinctContents.size > 1) return undefined
+    const candidate = sameTimestamp[0]
+    if (candidate && candidate.content !== currentText) return candidate.version
+    index += sameTimestamp.length
+  }
+
+  return undefined
+}
 
 function findQuoteRanges(text: string, findings: readonly Finding[], baseOffset: number) {
   return findings
@@ -99,39 +142,208 @@ function DraftCopy({
 
 type EditorView = 'draft' | 'changes'
 
-function DraftEditor({ draft }: { draft: Draft }) {
-  const { user } = useAuth()
-  const [draftText, setDraftText] = useState(draft.content)
-  const [draftFindings, setDraftFindings] = useState<Finding[]>(() =>
-    allFindings.filter((finding) => finding.draftId === draft.id).map((finding) => ({ ...finding })),
+function formatActivityAction(action: string) {
+  const labels: Record<string, string> = {
+    finding_accepted: 'Finding accepted',
+    finding_dismissed: 'Finding dismissed',
+    decision_approved: 'Draft approved',
+    decision_changes_requested: 'Changes requested',
+    submitted_for_review: 'Draft submitted for review',
+    draft_edited: 'Draft edited',
+    comment_added: 'Comment added',
+    review_run: 'AI review completed',
+  }
+  return labels[action] ?? action.replaceAll('_', ' ')
+}
+
+function findingDecisionDetails(event: ActivityEvent, findings: readonly Finding[]) {
+  const [, sourceId = '', rawReason = ''] = /^([^:]+):(.*)$/s.exec(event.detail) ?? []
+  const source = sourceId.trim()
+  const finding = findings.find(
+    (item) => source && (item.sourceName.endsWith(`(${source})`) || item.sourceName === source),
   )
+
+  return {
+    findingName: finding ? `${finding.category} finding` : source ? `Finding ${source}` : 'Finding',
+    reason: event.action === 'finding_dismissed' ? rawReason.trim() : '',
+  }
+}
+
+function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
+  const { user } = useAuth()
+  const userIdentity = `${user?.id ?? ''}:${user?.role ?? ''}`
+  const [detail, setDetail] = useState(initialDetail)
+  const [draftText, setDraftText] = useState(initialDetail.draft.content)
+  const [detailUserIdentity, setDetailUserIdentity] = useState<string | null>(userIdentity)
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const [reviewing, setReviewing] = useState(false)
   const [reviewError, setReviewError] = useState<string | null>(null)
-  const [reviewNotice, setReviewNotice] = useState<string | null>(null)
-  const [risk, setRisk] = useState<{ level: string; score: number } | null>(null)
+  const [mutationError, setMutationError] = useState<string | null>(null)
+  const [mutationSuccess, setMutationSuccess] = useState<string | null>(null)
+  const [mutating, setMutating] = useState(false)
+  const [activity, setActivity] = useState<ActivityEvent[]>([])
+  const [activityError, setActivityError] = useState<string | null>(null)
+  const [dismissalFindingId, setDismissalFindingId] = useState<string | null>(null)
+  const [dismissalReason, setDismissalReason] = useState('')
+  const [dismissalReasonError, setDismissalReasonError] = useState<string | null>(null)
+  const [editingDraft, setEditingDraft] = useState(false)
   const [view, setView] = useState<EditorView>('draft')
-  const [draftStatus, setDraftStatus] = useState(draft.status)
-  const [decisions, setDecisions] = useState<Decision[]>([])
-  const draftComments = allComments.filter((comment) => comment.draftId === draft.id)
-  const versionHistory = versions.find((item) => item.draftId === draft.id)
+  const dismissalReasonInput = useRef<HTMLTextAreaElement>(null)
+  const previousUserIdentity = useRef(userIdentity)
+  const roleRefreshRef = useRef<{
+    controller: AbortController
+    completion: Promise<void>
+  } | null>(null)
+  const { draft, findings: draftFindings } = detail
+  const workflowDecisions = detail.decisions.filter(
+    (decision) => decision.type === 'approved' || decision.type === 'changes_requested',
+  )
+  const dismissalFinding = draftFindings.find((finding) => finding.id === dismissalFindingId)
+  const workflowStatusConfirmed = detailUserIdentity === userIdentity
+  const canEditDraft = user?.role === 'author'
+    && (draft.status === 'draft' || draft.status === 'changes_requested')
+  const previousVersion = findPreviousVersion(detail.versions, draftText, draft.updatedAt)
   const hasOpenHighFinding = draftFindings.some(
     (finding) => finding.severity === 'high' && finding.status === 'open',
   )
 
+  const refreshDetail = useCallback(async () => {
+    const updatedDetail = await getDraftDetail(draft.id)
+    setDetail(updatedDetail)
+    return updatedDetail
+  }, [draft.id])
+
+  const refreshActivity = useCallback(async () => {
+    try {
+      const events = await getActivityFeed()
+      const draftEvents = events.filter((event) => event.draftId === draft.id)
+      setActivity(draftEvents)
+      setActivityError(null)
+      return draftEvents
+    } catch (failure) {
+      setActivityError(
+        failure instanceof Error ? failure.message : 'The activity feed could not be loaded.',
+      )
+      return []
+    }
+  }, [draft.id])
+
+  useEffect(() => {
+    let active = true
+    getActivityFeed()
+      .then((events) => {
+        if (active) {
+          setActivity(events.filter((event) => event.draftId === draft.id))
+          setActivityError(null)
+        }
+      })
+      .catch((failure: unknown) => {
+        if (active) {
+          setActivityError(
+            failure instanceof Error ? failure.message : 'The activity feed could not be loaded.',
+          )
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [draft.id])
+
+  useEffect(() => {
+    if (previousUserIdentity.current === userIdentity) return
+    previousUserIdentity.current = userIdentity
+
+    const previousRefresh = roleRefreshRef.current
+    previousRefresh?.controller.abort()
+
+    if (!userIdentity) return
+
+    const controller = new AbortController()
+
+    const completion = (async () => {
+      if (previousRefresh) await previousRefresh.completion
+      if (controller.signal.aborted) return
+
+      try {
+        const updatedDetail = await getDraftDetail(draft.id, controller.signal)
+        if (!controller.signal.aborted) {
+          setDetail(updatedDetail)
+          setDraftText(updatedDetail.draft.content)
+          setEditingDraft(false)
+          setDetailUserIdentity(userIdentity)
+          setMutationError(null)
+        }
+      } catch (refreshFailure) {
+        if (!controller.signal.aborted) {
+          setMutationError(
+            refreshFailure instanceof Error
+              ? refreshFailure.message
+              : 'The draft status could not be refreshed.',
+          )
+        }
+      }
+    })()
+    roleRefreshRef.current = { controller, completion }
+
+    return () => {
+      controller.abort()
+    }
+  }, [draft.id, userIdentity])
+
+  async function saveCurrentContent() {
+    if (!user) throw new Error('Sign in to update this draft.')
+    if (draftText === draft.content) return
+    if (user.role !== 'author') {
+      throw new Error('Only the author can update draft content.')
+    }
+    await updateDraftContent(draft.id, draftText, user.name, user.role)
+  }
+
+  function cancelDraftEdit() {
+    setDraftText(draft.content)
+    setEditingDraft(false)
+    setMutationError(null)
+  }
+
+  async function saveDraftEdit() {
+    if (!user || user.role !== 'author' || !canEditDraft || mutating) return
+    setMutating(true)
+    setMutationError(null)
+    setMutationSuccess(null)
+    try {
+      await saveCurrentContent()
+      const updatedDetail = await refreshDetail()
+      if (updatedDetail.draft.content !== draftText) {
+        throw new Error('The saved content does not match the latest draft returned by the API.')
+      }
+      setDraftText(updatedDetail.draft.content)
+      setEditingDraft(false)
+      await refreshActivity()
+      setMutationSuccess('Draft content saved.')
+      setAnnouncement('Draft content saved')
+    } catch (saveFailure) {
+      setMutationError(
+        saveFailure instanceof Error ? saveFailure.message : 'The draft content could not be saved.',
+      )
+    } finally {
+      setMutating(false)
+    }
+  }
+
   async function runReview() {
     setReviewing(true)
+    setMutating(true)
     setReviewError(null)
-    setReviewNotice(null)
-    setRisk(null)
+    setMutationError(null)
     setAnnouncement('Running AI review')
     try {
-      const response = await reviewDraft(draftText)
-      setDraftFindings(response.findings.map((finding) => mapBackendFinding(finding, draft.id)))
+      await saveCurrentContent()
+      await reviewDraft(draft.id)
+      await refreshDetail()
+      await refreshActivity()
       setSelectedFindingId(null)
-      setRisk(response.risk)
-      setReviewNotice(response.error)
       setAnnouncement('AI review complete')
     } catch (reviewFailure) {
       setReviewError(
@@ -142,6 +354,7 @@ function DraftEditor({ draft }: { draft: Draft }) {
       setAnnouncement('AI review unavailable')
     } finally {
       setReviewing(false)
+      setMutating(false)
     }
   }
 
@@ -162,12 +375,98 @@ function DraftEditor({ draft }: { draft: Draft }) {
     })
   }
 
-  function changeFindingStatus(findingId: string, status: FindingStatus) {
-    setDraftFindings((currentFindings) => currentFindings.map((finding) => (
-      finding.id === findingId ? { ...finding, status } : finding
-    )))
-    setAnnouncement(status === 'accepted' ? 'Finding accepted' : 'Finding dismissed')
+  const changeFindingStatus = useCallback(async (
+    findingId: string,
+    status: FindingStatus,
+    reason?: string,
+  ): Promise<boolean> => {
+    if (!user) return false
+    setMutating(true)
+    setMutationError(null)
+    setMutationSuccess(null)
+    try {
+      const finding = draftFindings.find((item) => item.id === findingId)
+      if (!finding) throw new Error('The selected finding is no longer available.')
+      if (status === 'dismissed' && !reason?.trim()) {
+        throw new Error('A reason is required to dismiss a finding.')
+      }
+      const savedFinding = await updateFinding(
+        finding.id,
+        finding.draftId,
+        status,
+        user.name,
+        user.role,
+        reason?.trim(),
+      )
+      if (savedFinding.id !== finding.id || savedFinding.status !== status) {
+        throw new Error(`The API did not confirm the ${status} status for finding ${finding.id}.`)
+      }
+      const updatedDetail = await refreshDetail()
+      const updatedFinding = updatedDetail.findings.find((item) => item.id === findingId)
+      if (updatedFinding?.status !== status) {
+        throw new Error(`The API did not persist the ${status} status for finding ${findingId}.`)
+      }
+      const changedFinding = draftFindings.find((item) => {
+        if (item.id === findingId) return false
+        const updated = updatedDetail.findings.find((current) => current.id === item.id)
+        return updated?.status !== item.status
+      })
+      if (changedFinding) {
+        throw new Error(
+          `The API changed finding ${changedFinding.id} while updating ${findingId}. No success was reported; reload the draft and check its findings.`,
+        )
+      }
+      await refreshActivity()
+      setAnnouncement(status === 'accepted' ? 'Finding accepted' : 'Finding dismissed')
+      setMutationSuccess(status === 'accepted' ? 'Finding accepted.' : 'Finding dismissed.')
+      return true
+    } catch (failure) {
+      setMutationSuccess(null)
+      setMutationError(
+        failure instanceof Error ? failure.message : 'The finding could not be updated.',
+      )
+      return false
+    } finally {
+      setMutating(false)
+    }
+  }, [draftFindings, refreshActivity, refreshDetail, user])
+
+  const requestFindingStatusChange = useCallback((findingId: string, status: FindingStatus) => {
+    if (status === 'dismissed') {
+      setDismissalFindingId(findingId)
+      setDismissalReason('')
+      setDismissalReasonError(null)
+      setMutationError(null)
+      setMutationSuccess(null)
+      return
+    }
+    void changeFindingStatus(findingId, status)
+  }, [changeFindingStatus])
+
+  async function confirmFindingDismissal(event: ReactFormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const reason = dismissalReason.trim()
+    if (!reason) {
+      setDismissalReasonError('Enter a reason before dismissing this finding.')
+      return
+    }
+    if (!dismissalFindingId) return
+    setDismissalReasonError(null)
+    if (await changeFindingStatus(dismissalFindingId, 'dismissed', reason)) {
+      setDismissalFindingId(null)
+      setDismissalReason('')
+    }
   }
+
+  function closeDismissalDialog() {
+    setDismissalFindingId(null)
+    setDismissalReason('')
+    setDismissalReasonError(null)
+  }
+
+  useEffect(() => {
+    if (dismissalFindingId) dismissalReasonInput.current?.focus()
+  }, [dismissalFindingId])
 
   function changeViewOnKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
     const tabButtons = [...(event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [])]
@@ -184,10 +483,91 @@ function DraftEditor({ draft }: { draft: Draft }) {
     setView(nextTab?.id === 'changes-tab' ? 'changes' : 'draft')
   }
 
-  function recordDecision(decision: Decision) {
-    setDecisions((current) => [decision, ...current])
-    setDraftStatus(decision.type)
-    setAnnouncement(decision.type === 'approved' ? 'Draft approved' : 'Changes requested')
+  async function recordDecision(type: string, note: string) {
+    if (!user) throw new Error('Sign in to record a decision.')
+    setMutating(true)
+    setMutationError(null)
+    setMutationSuccess(null)
+    try {
+      const currentDetail = await refreshDetail()
+      if (currentDetail.draft.status !== 'in_review') {
+        throw new Error(
+          `This draft is ${currentDetail.draft.status.replace('_', ' ')}, not in review. Refresh the draft before recording a decision.`,
+        )
+      }
+      if (draftText !== currentDetail.draft.content) {
+        throw new Error(
+          'The draft has unsaved content changes. Return to the author to save and submit it for review again before recording a decision.',
+        )
+      }
+      const previousDecisionCount = currentDetail.decisions.length
+      await decideDraft(draft.id, type, user.name, user.role, note)
+      const updatedDetail = await refreshDetail()
+      const expectedStatus = type === 'approved' ? 'approved' : 'changes_requested'
+      if (updatedDetail.draft.status !== expectedStatus) {
+        throw new Error(
+          `The decision request succeeded, but the backend status is "${updatedDetail.draft.status}" instead of "${expectedStatus}".`,
+        )
+      }
+      const recorded = updatedDetail.decisions.length > previousDecisionCount
+        && updatedDetail.decisions.some((decision) => (
+          decision.type === type
+          && decision.byName === user.name
+          && decision.byRole === user.role
+          && (decision.note ?? '') === note
+        ))
+      if (!recorded) {
+        throw new Error(
+          `The decision request succeeded, but the backend did not return the ${type} decision in history.`,
+        )
+      }
+      await refreshActivity()
+      setAnnouncement(type === 'approved' ? 'Draft approved' : 'Changes requested')
+    } catch (decisionFailure) {
+      try {
+        await refreshDetail()
+      } catch (refreshFailure) {
+        setDetailUserIdentity(null)
+        const decisionMessage = decisionFailure instanceof Error
+          ? decisionFailure.message
+          : 'The decision could not be recorded.'
+        const refreshMessage = refreshFailure instanceof Error
+          ? refreshFailure.message
+          : 'Unknown refresh error.'
+        throw new Error(
+          `${decisionMessage} The latest workflow status could not be refreshed: ${refreshMessage}`,
+          { cause: refreshFailure },
+        )
+      }
+      throw decisionFailure
+    } finally {
+      setMutating(false)
+    }
+  }
+
+  async function submitCurrentDraft() {
+    if (!user) throw new Error('Sign in to submit this draft.')
+    setMutating(true)
+    setMutationError(null)
+    try {
+      await saveCurrentContent()
+      const submittedDraft = await submitDraft(draft.id, user.name, user.role)
+      if (submittedDraft.status !== 'in_review') {
+        throw new Error(
+          `The backend returned status "${submittedDraft.status}" after submission instead of "in_review".`,
+        )
+      }
+      const updatedDetail = await refreshDetail()
+      if (updatedDetail.draft.status !== 'in_review') {
+        throw new Error(
+          `The draft was submitted, but its persisted status is "${updatedDetail.draft.status}" instead of "in_review".`,
+        )
+      }
+      await refreshActivity()
+      setAnnouncement('Draft submitted')
+    } finally {
+      setMutating(false)
+    }
   }
 
   useEffect(() => {
@@ -212,24 +592,15 @@ function DraftEditor({ draft }: { draft: Draft }) {
         const selectedFinding = draftFindings.find((finding) => finding.id === selectedFindingId)
         if (!selectedFinding) return
         event.preventDefault()
-        changeFindingStatus(selectedFinding.id, key === 'a' ? 'accepted' : 'dismissed')
+        requestFindingStatusChange(selectedFinding.id, key === 'a' ? 'accepted' : 'dismissed')
       }
     }
 
     window.addEventListener('keydown', handleEditorShortcut)
     return () => window.removeEventListener('keydown', handleEditorShortcut)
-  }, [draftFindings, selectedFindingId])
+  }, [draftFindings, requestFindingStatusChange, selectedFindingId])
 
   if (!user) return <EmptyState description="Sign in to review this draft." title="Sign in required" />
-  if (!versionHistory) {
-    return (
-      <EmptyState
-        action={<Link className="text-link" to="/drafts">Back to drafts</Link>}
-        description="The version history for this draft is not available."
-        title="Draft history unavailable"
-      />
-    )
-  }
 
   return (
     <div className="draft-editor-page">
@@ -241,7 +612,7 @@ function DraftEditor({ draft }: { draft: Draft }) {
             <h1>{draft.title}</h1>
             <p className="editor-author">By {draft.author}</p>
           </div>
-          <span className={`status-badge status-${draftStatus}`}>{draftStatus.replace('_', ' ')}</span>
+          <span className={`status-badge status-${draft.status}`}>{draft.status.replace('_', ' ')}</span>
         </div>
       </header>
 
@@ -251,14 +622,52 @@ function DraftEditor({ draft }: { draft: Draft }) {
             <h2 id="draft-content-heading">Draft content</h2>
             <span>{draftFindings.length} findings</span>
           </div>
-          <div className="draft-editor-field">
-            <label htmlFor="draft-text">Edit draft text</label>
-            <textarea
-              id="draft-text"
-              onChange={(event) => setDraftText(event.target.value)}
-              value={draftText}
-            />
-          </div>
+          {editingDraft && canEditDraft ? (
+            <div className="draft-editor-field">
+              <label htmlFor="draft-text">Edit draft text</label>
+              <textarea
+                autoFocus
+                disabled={mutating}
+                id="draft-text"
+                onChange={(event) => setDraftText(event.target.value)}
+                value={draftText}
+              />
+              <div className="draft-edit-actions">
+                <button
+                  className="logout-button"
+                  disabled={mutating}
+                  onClick={cancelDraftEdit}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  className="primary-button"
+                  disabled={mutating || !canEditDraft || draftText === draft.content}
+                  onClick={() => void saveDraftEdit()}
+                  type="button"
+                >
+                  {mutating ? 'Saving...' : 'Save draft'}
+                </button>
+              </div>
+            </div>
+          ) : canEditDraft ? (
+            <div className="draft-editor-field">
+              <button
+                className="secondary-button"
+                disabled={mutating || !workflowStatusConfirmed}
+                onClick={() => {
+                  setDraftText(draft.content)
+                  setEditingDraft(true)
+                  setMutationError(null)
+                  setMutationSuccess(null)
+                }}
+                type="button"
+              >
+                Edit draft text
+              </button>
+            </div>
+          ) : null}
           <div aria-label="Draft view" className="view-tabs" role="tablist">
             <button
               aria-controls="draft-tab-panel"
@@ -302,10 +711,19 @@ function DraftEditor({ draft }: { draft: Draft }) {
                 selectedFindingId={selectedFindingId}
               />
             ) : (
-              <DiffView
-                currentContent={draftText}
-                previousContent={versionHistory.previous.content}
-              />
+              <>
+                <p className="editor-hint">Version history is loaded from the live backend.</p>
+                {previousVersion ? (
+                  <DiffView
+                    currentContent={draftText}
+                    previousContent={previousVersion.content}
+                  />
+                ) : (
+                  <p className="findings-empty" role="status">
+                    No previous version is available from the backend.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </section>
@@ -316,17 +734,12 @@ function DraftEditor({ draft }: { draft: Draft }) {
             <button
               aria-busy={reviewing}
               className="primary-button"
-              disabled={reviewing}
+              disabled={reviewing || mutating}
               onClick={() => void runReview()}
               type="button"
             >
               {reviewing ? 'Reviewing...' : 'Run AI review'}
             </button>
-            {risk && (
-              <span className="risk-badge">
-                Risk: {risk.level} ({risk.score})
-              </span>
-            )}
           </div>
           {reviewError && (
             <ErrorState
@@ -335,11 +748,7 @@ function DraftEditor({ draft }: { draft: Draft }) {
               title="AI review unavailable"
             />
           )}
-          {reviewNotice && (
-            <p className="review-notice" role="status">
-              AI unavailable, rule-based checks only. {reviewNotice}
-            </p>
-          )}
+          {mutationError && <p className="review-notice" role="alert">{mutationError}</p>}
           <details className="keyboard-shortcuts">
             <summary>Keyboard shortcuts</summary>
             <ul>
@@ -350,29 +759,100 @@ function DraftEditor({ draft }: { draft: Draft }) {
             <p>Shortcuts are paused while typing in a text field.</p>
           </details>
           <FindingsPanel
+            disabled={mutating}
             findings={draftFindings}
             onSelectFinding={(findingId) => selectFinding(findingId, 'card')}
-            onStatusChange={changeFindingStatus}
+            onStatusChange={requestFindingStatusChange}
             selectedFindingId={selectedFindingId}
           />
           <CommentsPanel
-            draftId={draft.id}
             findings={draftFindings}
-            initialComments={draftComments}
-            user={user}
+            comments={detail.comments}
+            onPost={async (text, findingId) => {
+              await addDraftComment(draft.id, user.name, user.role, text, findingId)
+              await refreshDetail()
+              await refreshActivity()
+            }}
           />
         </div>
       </div>
 
+      <section aria-labelledby="activity-feed-heading" className="activity-feed decision-history">
+        <h2 id="activity-feed-heading">Activity Feed</h2>
+        {activityError ? (
+          <p role="alert">
+            {activityError}{' '}
+            <button onClick={() => void refreshActivity()} type="button">Retry</button>
+          </p>
+        ) : activity.length === 0 ? (
+          <p>No activity recorded for this draft.</p>
+        ) : (
+          <ol>
+            {activity.map((event) => (
+              <li key={event.id}>
+                <strong>{formatActivityAction(event.action)}</strong>
+                <span> by {event.actor} ({event.role})</span>
+                <time dateTime={event.createdAt}>
+                  {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(event.createdAt))}
+                </time>
+                {event.detail && <p>{event.detail}</p>}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      <section aria-labelledby="finding-decision-history-heading" className="decision-history">
+        <h2 id="finding-decision-history-heading">Finding Decision History</h2>
+        <p>Accept and Dismiss actions are recorded from the persisted activity log.</p>
+        {activityError ? (
+          <p role="alert">
+            {activityError}{' '}
+            <button onClick={() => void refreshActivity()} type="button">Retry</button>
+          </p>
+        ) : activity.filter((event) => (
+          event.action === 'finding_accepted' || event.action === 'finding_dismissed'
+        )).length === 0 ? (
+          <p>No finding decisions recorded for this draft.</p>
+        ) : (
+          <ol>
+            {activity
+              .filter((event) => (
+                event.action === 'finding_accepted' || event.action === 'finding_dismissed'
+              ))
+              .map((event) => {
+                const details = findingDecisionDetails(event, draftFindings)
+                return (
+                  <li key={event.id}>
+                    <strong>
+                      {details.findingName}: {event.action === 'finding_accepted' ? 'Accepted' : 'Dismissed'}
+                    </strong>
+                    <span> by {event.actor} ({event.role})</span>
+                    <time dateTime={event.createdAt}>
+                      {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(event.createdAt))}
+                    </time>
+                    {details.reason && <p>Dismissal reason: {details.reason}</p>}
+                  </li>
+                )
+              })}
+          </ol>
+        )}
+      </section>
+
       <section aria-labelledby="decision-history-heading" className="decision-history">
-        <h2 id="decision-history-heading">Decision history</h2>
-        {decisions.length === 0 ? (
+        <h2 id="decision-history-heading">Workflow Decision History</h2>
+        <p>Approve and Request Changes actions are recorded here.</p>
+        {workflowDecisions.length === 0 ? (
           <p>No decisions recorded for this draft.</p>
         ) : (
           <ol>
-            {decisions.map((decision) => (
+            {workflowDecisions.map((decision) => (
               <li key={decision.id}>
-                <strong>{decision.type === 'approved' ? 'Approved' : 'Changes requested'}</strong>
+                <strong>
+                  {decision.type === 'approved'
+                    ? 'Approved'
+                    : 'Changes requested'}
+                </strong>
                 <span> by {decision.byName} ({decision.byRole})</span>
                 <time dateTime={decision.createdAt}>
                   {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(decision.createdAt))}
@@ -384,13 +864,72 @@ function DraftEditor({ draft }: { draft: Draft }) {
         )}
       </section>
 
+      {mutationSuccess && <p className="review-notice" role="status">{mutationSuccess}</p>}
       <DecisionBar
-        draftId={draft.id}
         hasOpenHighFinding={hasOpenHighFinding}
         onConfirm={recordDecision}
-        status={draftStatus}
+        onSubmit={submitCurrentDraft}
+        status={draft.status}
+        statusConfirmed={workflowStatusConfirmed}
         user={user}
+        submitting={mutating || !workflowStatusConfirmed}
       />
+      {dismissalFinding && (
+        <div className="dialog-backdrop">
+          <form
+            aria-labelledby="dismissal-dialog-title"
+            aria-modal="true"
+            className="decision-dialog"
+            noValidate
+            onKeyDown={(event) => {
+              if (event.key === 'Escape' && !mutating) closeDismissalDialog()
+            }}
+            onSubmit={(event) => void confirmFindingDismissal(event)}
+            role="dialog"
+          >
+            <h2 id="dismissal-dialog-title">Dismiss this finding?</h2>
+            <p>
+              Add a reason for dismissing “{dismissalFinding.category}”. The status and reason will
+              be saved with the finding.
+            </p>
+            <label htmlFor="finding-dismissal-reason">Reason for dismissal</label>
+            <textarea
+              aria-describedby={dismissalReasonError ? 'finding-dismissal-error' : undefined}
+              aria-invalid={Boolean(dismissalReasonError)}
+              aria-required="true"
+              id="finding-dismissal-reason"
+              onChange={(event) => {
+                setDismissalReason(event.target.value)
+                setDismissalReasonError(null)
+              }}
+              ref={dismissalReasonInput}
+              rows={4}
+              value={dismissalReason}
+            />
+            {dismissalReasonError && (
+              <p id="finding-dismissal-error" role="alert">{dismissalReasonError}</p>
+            )}
+            {mutationError && <p role="alert">{mutationError}</p>}
+            <div className="dialog-actions">
+              <button
+                className="logout-button"
+                disabled={mutating}
+                onClick={closeDismissalDialog}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className="primary-button"
+                disabled={mutating}
+                type="submit"
+              >
+                {mutating ? 'Saving...' : 'Confirm dismissal'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
       <p aria-atomic="true" aria-live="polite" className="sr-only">{announcement}</p>
     </div>
   )
@@ -398,34 +937,41 @@ function DraftEditor({ draft }: { draft: Draft }) {
 
 export function DraftEditorPage() {
   const { id } = useParams<{ id: string }>()
-  const [draft, setDraft] = useState<Draft | null>(null)
+  const [detail, setDetail] = useState<DraftDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [draftNotFound, setDraftNotFound] = useState(false)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let active = true
-    const timeoutId = window.setTimeout(() => {
+    const controller = new AbortController()
+
+    async function loadDraft() {
       try {
-        const loadedDraft = drafts.find((item) => item.id === id)
-        if (!loadedDraft) throw new Error('This draft could not be found.')
+        if (!id) throw new Error('This draft could not be found.')
+        const loadedDetail = await getDraftDetail(id, controller.signal)
         if (active) {
-          setDraft(loadedDraft)
+          setDetail(loadedDetail)
           setError(null)
+          setDraftNotFound(false)
         }
       } catch (loadError) {
         if (active) {
-          setDraft(null)
+          setDetail(null)
+          setDraftNotFound(loadError instanceof DraftNotFoundError)
           setError(loadError instanceof Error ? loadError.message : 'Draft could not be loaded. Please try again.')
         }
       } finally {
         if (active) setLoading(false)
       }
-    }, 350)
+    }
+
+    void loadDraft()
 
     return () => {
       active = false
-      window.clearTimeout(timeoutId)
+      controller.abort()
     }
   }, [attempt, id])
 
@@ -435,7 +981,16 @@ export function DraftEditorPage() {
   }
 
   if (loading) return <LoadingState label="Loading draft" layout="editor" />
-  if (error || !draft) {
+  if (draftNotFound) {
+    return (
+      <EmptyState
+        action={<Link className="text-link" to="/drafts">Back to drafts</Link>}
+        description={`No live draft is available for "${id ?? 'this URL'}".`}
+        title="Draft not found"
+      />
+    )
+  }
+  if (error || !detail) {
     return (
       <ErrorState
         description={error ?? 'Draft could not be loaded. Please try again.'}
@@ -445,5 +1000,5 @@ export function DraftEditorPage() {
     )
   }
 
-  return <DraftEditor draft={draft} key={draft.id} />
+  return <DraftEditor initialDetail={detail} key={detail.draft.id} />
 }

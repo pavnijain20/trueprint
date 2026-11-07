@@ -86,7 +86,7 @@ export function KnowledgeBasePage() {
     [category, documents, search],
   )
   const requestedDocumentId = searchParams.get('doc')
-  const selectedDocument = documents.find((document) => document.id === requestedDocumentId)
+  const selectedDocument = visibleDocuments.find((document) => document.id === requestedDocumentId)
     ?? visibleDocuments[0]
 
   useEffect(() => {
