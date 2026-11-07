@@ -8,3 +8,4 @@ __pycache__/
 .cache/
 *.db
 node_modules/
+workflow.db

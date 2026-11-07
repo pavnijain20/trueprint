@@ -1,0 +1,1124 @@
+{
+ "d33731945de2b28ce907a4e092ab9f8ce9d8c62d0fe7368b317518de0c2e0c6d": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "Clinically proven to remove acne in 7 days.",
+    "reason": "Unsupported claim regarding medical or guaranteed results without approved evidence.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_02",
+     "quote": "Do not make medical, guaranteed, or unsupported product claims. Do not use these terms or claims unless the team has valid supporting evidence and approval: miracle, cure, 100% guaranteed, clinically proven, removes acne, works for every skin type, doctors recommend."
+    },
+    "suggested_fix": "Add an approved fact about acne results before making this claim",
+    "validated": true,
+    "start": 0,
+    "end": 43,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "dc1704828a5fc0e93e3213b88852c3868a321f456af85fe35dfeaa6313b73588": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "Clinically proven to remove acne in 7 days. Try GlowLeaf Serum today!",
+    "reason": "The text uses pressure-based language and an exclamation mark, which clashes with the friendly, clear, and helpful tone guidelines.",
+    "severity": "medium",
+    "confidence": 0.95,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Tone rules: Use a friendly, clear, and helpful tone. Keep sentences simple and easy to understand. Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "Clinically proven to remove acne in 7 days. You can try GlowLeaf Serum today.",
+    "validated": true,
+    "start": 0,
+    "end": 69,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f2",
+    "status": "open"
+   }
+  ]
+ },
+ "b329f3d662741dc051cb66d5e8da4939223e6173665aa3b4e587502aafb37d24": {
+  "findings": []
+ },
+ "c0e7d4a3cbe83d194b25df344a241864dc9da66ce79d351eed91ee3bbe7eb807": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "Enjoy free shipping on every order from our store.",
+    "reason": "Free shipping does not apply to every order as it only applies to orders above Rs 499.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F04",
+     "quote": "Free shipping applies only to orders above Rs 499."
+    },
+    "suggested_fix": "Enjoy free shipping on orders above Rs 499.",
+    "validated": true,
+    "start": 0,
+    "end": 50,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "1494cc703b2c0813eb4f456a25088981cecde2841ebf018fe419c8746b6720a0": {
+  "findings": []
+ },
+ "ee218af23b8590405579cfe51b5c367e915661afdfe6dbd4ff3cbb2da83d0ed5": {
+  "findings": [
+   {
+    "category": "terminology",
+    "flagged_text": "Glow Leaf serum",
+    "reason": "The product name must be spelled GlowLeaf Serum exactly, without alternative spacing or lowercase formatting.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_03",
+     "quote": "Always spell the product name exactly as GlowLeaf Serum. Never write Glow Leaf Serum, glowleaf serum or Glowleaf Serum."
+    },
+    "suggested_fix": "Our GlowLeaf Serum is great for your daily routine.",
+    "validated": true,
+    "start": 4,
+    "end": 19,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "7203f2a5f45aa3ecca9350950c2eed317b6428d39a85acd6722ee46d95bd595e": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "BUY NOW!!!",
+    "reason": "The brand voice should avoid pressure-based calls to action and excessive exclamation marks are not allowed.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F10",
+     "quote": "The brand voice should avoid pressure-based calls to action."
+    },
+    "suggested_fix": "Discover our GlowLeaf Serum.",
+    "validated": true,
+    "start": 0,
+    "end": 10,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   },
+   {
+    "category": "claim",
+    "flagged_text": "miracle",
+    "reason": "Miracle claims are not approved for this demo brand.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F15",
+     "quote": "\"Miracle\" claims are not approved for this demo brand."
+    },
+    "suggested_fix": "Our GlowLeaf Serum will change your life forever.",
+    "validated": true,
+    "start": 15,
+    "end": 22,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f6",
+    "status": "open"
+   },
+   {
+    "category": "claim",
+    "flagged_text": "will change your life forever",
+    "reason": "Guaranteed-result claims require approved evidence before use.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F14",
+     "quote": "Guaranteed-result claims require approved evidence before use."
+    },
+    "suggested_fix": "Add an approved fact about product results before making this claim.",
+    "validated": true,
+    "start": 38,
+    "end": 67,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f7",
+    "status": "open"
+   },
+   {
+    "category": "tone",
+    "flagged_text": "BUY NOW!!! Our miracle GlowLeaf Serum will change your life forever!!!",
+    "reason": "Excessive exclamation marks are not allowed in brand copy.",
+    "severity": "medium",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F11",
+     "quote": "Excessive exclamation marks are not allowed in brand copy."
+    },
+    "suggested_fix": "Discover our GlowLeaf Serum.",
+    "validated": true,
+    "start": 0,
+    "end": 70,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f2",
+    "status": "open"
+   },
+   {
+    "category": "tone",
+    "flagged_text": "BUY NOW",
+    "reason": "ALL CAPS promotional copy should be flagged for review.",
+    "severity": "medium",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F12",
+     "quote": "ALL CAPS promotional copy should be flagged for review."
+    },
+    "suggested_fix": "Shop GlowLeaf Serum.",
+    "validated": true,
+    "start": 0,
+    "end": 7,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f3",
+    "status": "open"
+   }
+  ]
+ },
+ "0696fff9e2eb923c570558ab9a3b17b4dab2dcae5d0172d8b98f6c5c59a0c59a": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "BUY NOW!!!",
+    "reason": "Shouting using ALL CAPS and excessive exclamation marks clashes with the tone guidelines.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "Add it to your skincare routine",
+    "validated": true,
+    "start": 0,
+    "end": 10,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f2",
+    "status": "open"
+   },
+   {
+    "category": "tone",
+    "flagged_text": "will change your life forever!!!",
+    "reason": "Hype and pressure tactics clash with the friendly, clear, and helpful tone guideline.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Use a friendly, clear, and helpful tone. Keep sentences simple and easy to understand. Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "supports your skincare routine.",
+    "validated": true,
+    "start": 38,
+    "end": 70,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f4",
+    "status": "open"
+   }
+  ]
+ },
+ "0c02c7f6a2604db587ea898dd9fa5edfae6221f603b214a007d5d14a0eaf3419": {
+  "findings": []
+ },
+ "035a0e5344abe04575aff860638a5c5cc30b2883d4911e5d749d11b19fa338a6": {
+  "findings": []
+ },
+ "605f0d0f80793dd0d6dd2ff7f4a0c6912d4b28dcc4eb39898f62d1652ec6a03d": {
+  "revised": "Try GlowLeaf Serum today. Free shipping applies to orders above Rs 499.",
+  "missing_proof": "Approved evidence is needed to support claims that GlowLeaf Serum is clinically proven to remove acne in 7 days."
+ },
+ "aa1188503df3b909f58d613b6c7061a2426eb475000045c0789a9f247272d5c5": {
+  "findings": []
+ },
+ "a9cab57db78970a0c3d1432fb134273c550bcf51643b47f6e4329dc992a96817": {
+  "findings": []
+ },
+ "ca7b4590216d1c82846e9fe6e6dde9a0cdc32a9d0e9688640ea55caede8ebbe5": {
+  "findings": []
+ },
+ "ae40351124d773b658736d106f4407ba2fa08697e0953a18491d070b72d9ad83": {
+  "findings": []
+ },
+ "0a2911642a8605b4cb0af9fc9ba8141581c3b3cf40b86c19c66b8a7fdf876515": {
+  "findings": []
+ },
+ "3937385c3a1033e2fb05298f43a6dfd05540327726ec7a9d3d1ac700ce6b22ce": {
+  "findings": []
+ },
+ "b39b7d620e2cb758130066f5c86ce7089a19d24a5c3ecc63b29e962723cc59f2": {
+  "findings": []
+ },
+ "4e7f1ae07da241f3dfa361f63565ecabd7c04b0a2aaa70cbce1608bf8ec9eeed": {
+  "findings": []
+ },
+ "8c34baca3a91cec57c43f2196fecd4ee1bd01a17fda533ac75639d333f6d1c5c": {
+  "findings": []
+ },
+ "1a9ef9003a1cdefb911211adc437c32816b2414eac9a1c375f3a5a2db8fb2982": {
+  "findings": []
+ },
+ "b63b92f5f76941c04e72100544a584a8385f4bcbc6a85363cef8942083740357": {
+  "findings": []
+ },
+ "4f2f2272b0769290ebf57523cb50a0a1378561864cc942243c25bc6c5d3a5d70": {
+  "findings": []
+ },
+ "58343f97b3754d60d8f116680ac30594e7571994ee84c3a92222d316551647a5": {
+  "findings": []
+ },
+ "e81cc3e37bf8106d9fcb6e103f7dedde4ca7d3da1bb4059aef38da6b229f2822": {
+  "findings": []
+ },
+ "656711a977253d9bcfb18be1e91166d215991477c9ca30f3b852c8e1d5876027": {
+  "findings": [
+   {
+    "category": "terminology",
+    "flagged_text": "Glow Leaf serum",
+    "reason": "The product name must be spelled GlowLeaf Serum exactly, and incorrect spacings or capitalizations are not allowed.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_03",
+     "quote": "Always spell the product name exactly as GlowLeaf Serum. Never write Glow Leaf Serum, glowleaf serum or Glowleaf Serum."
+    },
+    "suggested_fix": "Our GlowLeaf Serum is great for your daily routine.",
+    "validated": true,
+    "start": 4,
+    "end": 19,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "53c912e408bbecee05f42ebd878146e193ef177adb6495da754d23ba16df7b4d": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "glowleaf serum",
+    "reason": "The product name is spelled incorrectly in violation of the required capitalization and spacing standards.",
+    "severity": "medium",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_03",
+     "quote": "Always spell the product name exactly as GlowLeaf Serum. Never write Glow Leaf Serum, glowleaf serum or Glowleaf Serum."
+    },
+    "suggested_fix": "Try GlowLeaf Serum this winter.",
+    "validated": true,
+    "start": 4,
+    "end": 18,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f2",
+    "status": "open"
+   }
+  ]
+ },
+ "10b65d76e94c1b6b46101319e75ee702e3fa3cc501386330eb6ee831b45b7f81": {
+  "findings": [
+   {
+    "category": "terminology",
+    "flagged_text": "glowleaf serum",
+    "reason": "The product name must be spelled correctly as GlowLeaf Serum.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_03",
+     "quote": "Always spell the product name exactly as GlowLeaf Serum. Never write Glow Leaf Serum, glowleaf serum or Glowleaf Serum."
+    },
+    "suggested_fix": "Try GlowLeaf Serum this winter.",
+    "validated": true,
+    "start": 4,
+    "end": 18,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "14fe4453863677681f24469bdd70e273e3e6f66db83a199620a6bf4873b8ac74": {
+  "findings": []
+ },
+ "9c72dd7da6c6981119096658c7891c99103ca2dca2eba7cbd7fd7b62e20dce32": {
+  "findings": [
+   {
+    "category": "terminology",
+    "flagged_text": "Glow leaf",
+    "reason": "The product name must be spelled exactly as GlowLeaf Serum and never as Glow Leaf Serum.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_03",
+     "quote": "Always spell the product name exactly as GlowLeaf Serum. Never write Glow Leaf Serum, glowleaf serum or Glowleaf Serum."
+    },
+    "suggested_fix": "GlowLeaf Serum is now available in a new bottle.",
+    "validated": true,
+    "start": 0,
+    "end": 9,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "0be300dba71401416395bc3f504ac6f85cc04d4a2b892b05c48d623f52582a6f": {
+  "findings": [
+   {
+    "category": "terminology",
+    "flagged_text": "Glowleaf Serum",
+    "reason": "The product name must be spelled as GlowLeaf Serum.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_03",
+     "quote": "Always spell the product name exactly as GlowLeaf Serum. Never write Glow Leaf Serum, glowleaf serum or Glowleaf Serum."
+    },
+    "suggested_fix": "Why our customers love GlowLeaf Serum.",
+    "validated": true,
+    "start": 23,
+    "end": 37,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "c2dbb13fc25ced68d040d5141be6d1bce6a5798195486b6659c3280db87c9d10": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "Glowleaf Serum",
+    "reason": "The product name casing must match the brand guidelines.",
+    "severity": "low",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_03",
+     "quote": "Always spell the product name exactly as GlowLeaf Serum. Never write Glow Leaf Serum, glowleaf serum or Glowleaf Serum."
+    },
+    "suggested_fix": "Why our customers love GlowLeaf Serum.",
+    "validated": true,
+    "start": 23,
+    "end": 37,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f2",
+    "status": "open"
+   }
+  ]
+ },
+ "70deda0957e35bbfa50133b5036ea9020269a603055be77d2fa18f27ccd902c7": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "Clinically proven to remove acne in 7 days.",
+    "reason": "Unsupported claim using unapproved medical and guaranteed terms.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_02",
+     "quote": "Do not make medical, guaranteed, or unsupported product claims. Do not use these terms or claims unless the team has valid supporting evidence and approval: miracle, cure, 100% guaranteed, clinically proven, removes acne, works for every skin type, doctors recommend."
+    },
+    "suggested_fix": "Add an approved fact about acne results before making this claim",
+    "validated": true,
+    "start": 0,
+    "end": 43,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "b0849ac4b650a0d0d09d32b6605e0f29df3c73004b61f48762c2ede607c19107": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "GlowLeaf Serum is 100% guaranteed to work for every skin type.",
+    "reason": "Unsupported claim using forbidden terms like 100% guaranteed and works for every skin type without approved evidence.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_02",
+     "quote": "Do not make medical, guaranteed, or unsupported product claims. Do not use these terms or claims unless the team has valid supporting evidence and approval: miracle, cure, 100% guaranteed, clinically proven, removes acne, works for every skin type, doctors recommend."
+    },
+    "suggested_fix": "Add an approved fact about skin types before making this claim",
+    "validated": true,
+    "start": 0,
+    "end": 62,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "97701ef9625fedc76514c6dcd0da4ec7714fcd404cd694a83d9e10e415c1661e": {
+  "findings": []
+ },
+ "fae69f50a757718ccd68372767e17a9c51f732886408281178837840c8954e75": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "A cure for dry skin",
+    "reason": "The draft includes a medical or cure claim without approved evidence.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_02",
+     "quote": "Do not make medical, guaranteed, or unsupported product claims. Do not use these terms or claims unless the team has valid supporting evidence and approval: miracle, cure, 100% guaranteed, clinically proven, removes acne, works for every skin type, doctors recommend."
+    },
+    "suggested_fix": "Add an approved fact about dry skin results before making this claim",
+    "validated": true,
+    "start": 0,
+    "end": 19,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "95a61c442e8ef6e74661f5785f0d4b3aa5a26cae9ce1571d3d68f9a1436bf2a1": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "A cure for dry skin, now in a bottle.",
+    "reason": "The use of pressure-based or exaggerated language clashes with the tone guidelines.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "Help your dry skin feel hydrated.",
+    "validated": true,
+    "start": 0,
+    "end": 37,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f2",
+    "status": "open"
+   }
+  ]
+ },
+ "86bd6ebe8818813231d2886b1fff4133e0d1ed1a6a5249c7b454f3ec8ccc2a0e": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "Experience the miracle of GlowLeaf Serum.",
+    "reason": "The use of hype and unapproved claims clashes with the required friendly and helpful tone.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Tone rules: Use a friendly, clear, and helpful tone. Keep sentences simple and easy to understand. Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "Discover the benefits of GlowLeaf Serum.",
+    "validated": true,
+    "start": 0,
+    "end": 41,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f2",
+    "status": "open"
+   }
+  ]
+ },
+ "f672993bc211e808576baf88fc496045c8a89532625893b29bbf7cb1dde29f47": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "Experience the miracle of GlowLeaf Serum.",
+    "reason": "Miracle claims are not approved for this demo brand.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F15",
+     "quote": "\"Miracle\" claims are not approved for this demo brand."
+    },
+    "suggested_fix": "Experience GlowLeaf Serum.",
+    "validated": true,
+    "start": 0,
+    "end": 41,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "53e32ef4b3d67a7137d591ded00eaea315f52a5c467218ef1f6d5b86e085bdfc": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "removes dark spots in two weeks",
+    "reason": "Medical or cure claims require approved evidence before use.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F13",
+     "quote": "Medical or cure claims require approved evidence before use."
+    },
+    "suggested_fix": "Add an approved fact about dark spot results before making this claim",
+    "validated": true,
+    "start": 15,
+    "end": 46,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "246ef600dbd16dd043bb2e5594391ba34d510350d7029dae1655b1f4d3b6822e": {
+  "findings": []
+ },
+ "9cb61439886dd75dce855ad9d20b7d56635f07e30ce5bbaf4b0bdffc868433c0": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "Doctors recommend",
+    "reason": "The text uses unapproved endorsement-style phrasing that clashes with our helpful and clear tone guidelines.",
+    "severity": "medium",
+    "confidence": 0.9,
+    "source": {
+     "type": "guideline",
+     "id": "guide_02",
+     "quote": "Do not make medical, guaranteed, or unsupported product claims. Do not use these terms or claims unless the team has valid supporting evidence and approval: miracle, cure, 100% guaranteed, clinically proven, removes acne, works for every skin type, doctors recommend."
+    },
+    "suggested_fix": "GlowLeaf Serum is great for sensitive skin.",
+    "validated": true,
+    "start": 0,
+    "end": 17,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f2",
+    "status": "open"
+   }
+  ]
+ },
+ "b2260240415b362dd14eadad58eb1e52c80261eef7c83ee653d2a8e420cf119c": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "Doctors recommend GlowLeaf Serum for sensitive skin.",
+    "reason": "Unsupported claim using terms not approved for this brand.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_02",
+     "quote": "Do not make medical, guaranteed, or unsupported product claims. Do not use these terms or claims unless the team has valid supporting evidence and approval: miracle, cure, 100% guaranteed, clinically proven, removes acne, works for every skin type, doctors recommend."
+    },
+    "suggested_fix": "GlowLeaf Serum is a skincare serum.",
+    "validated": true,
+    "start": 0,
+    "end": 52,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "93d19dfbb8932dfb9ad94b4300f20b1f2002682f141ea96e2163aa193522fe78": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "Enjoy free shipping on every order from our store.",
+    "reason": "Free shipping only applies to orders above Rs 499 according to approved facts.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F04",
+     "quote": "Free shipping applies only to orders above Rs 499."
+    },
+    "suggested_fix": "Enjoy free shipping on orders above Rs 499.",
+    "validated": true,
+    "start": 0,
+    "end": 50,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "b986e95d714596dd3fd7a6d34bf767d030353f33d8801ac727801314a1753972": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "Free shipping on all orders, no minimum, only this week.",
+    "reason": "Free shipping only applies to orders above Rs 499.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F04",
+     "quote": "Free shipping applies only to orders above Rs 499."
+    },
+    "suggested_fix": "Free shipping applies only to orders above Rs 499.",
+    "validated": true,
+    "start": 0,
+    "end": 56,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "8dbd53b6e35a639c01aed3802c6e560a9d53e0202dbc73c0a6b66ae09eab2787": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "only this week.",
+    "reason": "The phrase creates urgency and pressure tactics, which violate the tone guidelines.",
+    "severity": "medium",
+    "confidence": 0.9,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "Enjoy free shipping on all orders with no minimum.",
+    "validated": true,
+    "start": 41,
+    "end": 56,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f2",
+    "status": "open"
+   }
+  ]
+ },
+ "2cba1e7a311c5ab12dde7682490f4c7eaf8152b2e9727b58a3e12a773c7df4bb": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "BUY NOW!!!",
+    "reason": "Pressure-based calls to action and excessive exclamation marks are not allowed.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F10",
+     "quote": "The brand voice should avoid pressure-based calls to action."
+    },
+    "suggested_fix": "Discover GlowLeaf Serum while supplies last.",
+    "validated": true,
+    "start": 0,
+    "end": 10,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   },
+   {
+    "category": "tone",
+    "flagged_text": "BUY NOW!!! GlowLeaf Serum is selling out fast!!!",
+    "reason": "Excessive exclamation marks are not allowed in brand copy.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F11",
+     "quote": "Excessive exclamation marks are not allowed in brand copy."
+    },
+    "suggested_fix": "GlowLeaf Serum is available for purchase.",
+    "validated": true,
+    "start": 0,
+    "end": 48,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f2",
+    "status": "open"
+   }
+  ]
+ },
+ "21d247fb6baaf2124943d3e342654acda706dac074bdcc15d260bdceaef13aba": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "BUY NOW!!! GlowLeaf Serum is selling out fast!!!",
+    "reason": "The text uses shouting with all caps and excessive exclamation marks, along with pressure tactics.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Tone rules: Use a friendly, clear, and helpful tone. Keep sentences simple and easy to understand. Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "Add GlowLeaf Serum to your skincare routine.",
+    "validated": true,
+    "start": 0,
+    "end": 48,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f3",
+    "status": "open"
+   }
+  ]
+ },
+ "a12cd7d438b21c753490f0133919a93941dd8b37e3d23e0e291ed164532b3428": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "Hurry, you will regret it if you miss this offer. Buy GlowLeaf Serum right now!",
+    "reason": "The brand voice should avoid pressure-based calls to action.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F10",
+     "quote": "The brand voice should avoid pressure-based calls to action."
+    },
+    "suggested_fix": "Discover the GlowLeaf Serum offer available during our Winter Sale.",
+    "validated": true,
+    "start": 0,
+    "end": 79,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "f12bf1821bb9fd5ab33216a80123d22e2ad4929a0ac4e968804fd0bf47c2fb4b": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "Hurry, you will regret it if you miss this offer. Buy GlowLeaf Serum right now!",
+    "reason": "The text uses pressure tactics and urgency which violate the tone guidelines.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "Consider adding GlowLeaf Serum to your skincare routine.",
+    "validated": true,
+    "start": 0,
+    "end": 79,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f2",
+    "status": "open"
+   }
+  ]
+ },
+ "e7d6d5cb4e80ff46f4c4119d3f2cb4d8e8cf0f4f815241610d1b883c44adfb04": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "GET IT BEFORE IT'S GONE.",
+    "reason": "The brand voice should avoid pressure-based calls to action.",
+    "severity": "medium",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F10",
+     "quote": "The brand voice should avoid pressure-based calls to action."
+    },
+    "suggested_fix": "Available now for your skincare routine.",
+    "validated": true,
+    "start": 21,
+    "end": 45,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f3",
+    "status": "open"
+   },
+   {
+    "category": "terminology",
+    "flagged_text": "OUR BEST SERUM EVER. GET IT BEFORE IT'S GONE.",
+    "reason": "ALL CAPS promotional copy should be flagged for review.",
+    "severity": "medium",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F12",
+     "quote": "ALL CAPS promotional copy should be flagged for review."
+    },
+    "suggested_fix": "Our best serum ever.",
+    "validated": true,
+    "start": 0,
+    "end": 45,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "a2a80c1afcce0535ac148c18859ee913bbb668f059b418dc2abeb6503b124ffa": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "OUR BEST SERUM EVER.",
+    "reason": "Shouting with all caps and hype conflicts with the friendly and clear tone rule.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Tone rules: Use a friendly, clear, and helpful tone. Keep sentences simple and easy to understand. Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "Our best serum.",
+    "validated": true,
+    "start": 0,
+    "end": 20,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f2",
+    "status": "open"
+   },
+   {
+    "category": "tone",
+    "flagged_text": "GET IT BEFORE IT'S GONE.",
+    "reason": "Pressure-based language conflicts with the required helpful and friendly tone.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Tone rules: Use a friendly, clear, and helpful tone. Keep sentences simple and easy to understand. Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "Add it to your skincare routine.",
+    "validated": true,
+    "start": 21,
+    "end": 45,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f4",
+    "status": "open"
+   }
+  ]
+ },
+ "9cd990df685f7f99e5c220fc0bb680c82b46d28c8e2b3ff43d1b276b6c0a6277": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "BUY NOW!!!",
+    "reason": "The brand voice should avoid pressure-based calls to action and excessive exclamation marks are not allowed.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F10",
+     "quote": "The brand voice should avoid pressure-based calls to action."
+    },
+    "suggested_fix": "Discover our GlowLeaf Serum.",
+    "validated": true,
+    "start": 0,
+    "end": 10,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "621be8dccb18ea5fac7d03109ab3e231b58058a4706a24a419c19c33942a7819": {
+  "findings": [
+   {
+    "category": "terminology",
+    "flagged_text": "Glow Leaf serum",
+    "reason": "The product name must be spelled GlowLeaf Serum.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_03",
+     "quote": "Always spell the product name exactly as GlowLeaf Serum. Never write Glow Leaf Serum, glowleaf serum or Glowleaf Serum."
+    },
+    "suggested_fix": "Our GlowLeaf Serum is clinically proven to hydrate. Free shipping on every order!",
+    "validated": true,
+    "start": 4,
+    "end": 19,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   },
+   {
+    "category": "claim",
+    "flagged_text": "clinically proven to hydrate",
+    "reason": "Clinically proven claims require supporting evidence before use.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F16",
+     "quote": "\"Clinically proven\" claims are not approved without supporting evidence."
+    },
+    "suggested_fix": "Add an approved fact about hydration results before making this claim.",
+    "validated": true,
+    "start": 23,
+    "end": 51,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f3",
+    "status": "open"
+   },
+   {
+    "category": "claim",
+    "flagged_text": "Free shipping on every order!",
+    "reason": "Free shipping applies only to orders above Rs 499.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F04",
+     "quote": "Free shipping applies only to orders above Rs 499."
+    },
+    "suggested_fix": "Free shipping applies only to orders above Rs 499.",
+    "validated": true,
+    "start": 53,
+    "end": 82,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f5",
+    "status": "open"
+   }
+  ]
+ },
+ "64502d3c74f4eab693a4f36b480d5b770fe63954c60290f70d450a4e53371eeb": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "clinically proven",
+    "reason": "Avoid using high-pressure or unsupported hype terms.",
+    "severity": "medium",
+    "confidence": 0.95,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "Our Glow Leaf serum is designed to hydrate. Free shipping on every order!",
+    "validated": true,
+    "start": 23,
+    "end": 40,
+    "origin": "ai",
+    "agent": "voice",
+    "id": "f4",
+    "status": "open"
+   }
+  ]
+ },
+ "6b88f1f53bcccfde5d316bed0bbc9327f60f6042def053a5817dd652b28bfd1c": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "Glow Leaf Serum: a miracle for your skin!!!",
+    "reason": "The text uses excessive exclamation marks and pressure-based language.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_01",
+     "quote": "Use a friendly, clear, and helpful tone. Keep sentences simple and easy to understand. Avoid ALL CAPS, excessive exclamation marks, and pressure-based language."
+    },
+    "suggested_fix": "GlowLeaf Serum is a great addition to your skincare routine.",
+    "validated": true,
+    "start": 0,
+    "end": 43
+   }
+  ]
+ },
+ "1c0d58e8a20e9105187604445d53e2f6a8842bfbe85ba176dd006b6abfd2ca7a": {
+  "findings": [
+   {
+    "category": "terminology",
+    "flagged_text": "Glow Leaf Serum",
+    "reason": "The product name must be spelled GlowLeaf Serum.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_03",
+     "quote": "Always spell the product name exactly as GlowLeaf Serum. Never write Glow Leaf Serum, glowleaf serum or Glowleaf Serum."
+    },
+    "suggested_fix": "GlowLeaf Serum: a miracle for your skin!!!"
+   },
+   {
+    "category": "claim",
+    "flagged_text": "miracle",
+    "reason": "Miracle claims are not approved for this demo brand.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_02",
+     "quote": "Do not make medical, guaranteed, or unsupported product claims. Do not use these terms or claims unless the team has valid supporting evidence and approval: miracle, cure, 100% guaranteed, clinically proven, removes acne, works for every skin type, doctors recommend."
+    },
+    "suggested_fix": "Glow Leaf Serum: skincare serum for your skin!!!"
+   }
+  ]
+ },
+ "0095bd71d746ed610afda12fae07f8d94a7de23235380650ff817ab1006731fb": {
+  "findings": []
+ },
+ "5a83a530cdef507afbb57539e4b84164745eaa3c54c7b7f6f83797a840cf797e": {
+  "revised": "Try GlowLeaf Serum today.",
+  "missing_proof": "Approved evidence is needed to claim that the skincare serum is clinically proven to remove acne in 7 days."
+ },
+ "8761a8288c129c2331dd4d7f39fe6bcf93cb761daef7aec7ad8ce7dba701d85a": {
+  "findings": []
+ },
+ "fb898139f7b3478ebeddbfbf8d8903b0dcb81dfe76ad6638c977479124bd2913": {
+  "findings": []
+ }
+}

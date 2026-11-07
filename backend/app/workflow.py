@@ -85,8 +85,8 @@ def init():
         c.executescript(SCHEMA)
         ensure_finding_offset_columns(c)
         if c.execute("SELECT COUNT(*) FROM drafts").fetchone()[0] == 0:
-            for title, content in DEMO_DRAFTS:
-                did = new_id("d")
+            for i, (title, content) in enumerate(DEMO_DRAFTS, start=1):
+                did = f"d_demo{i}"
                 c.execute("INSERT INTO drafts VALUES (?,?,?,?,?,?)",
                           (did, title, "Demo Author", "draft", now(), content))
                 c.execute("INSERT INTO versions VALUES (?,?,?,?,?)",
@@ -280,10 +280,13 @@ def get_draft(draft_id: str):
         cm = c.execute("SELECT * FROM comments WHERE draft_id = ? ORDER BY created_at", (draft_id,)).fetchall()
         dc = c.execute("SELECT * FROM decisions WHERE draft_id = ? ORDER BY created_at", (draft_id,)).fetchall()
         v = c.execute("SELECT * FROM versions WHERE draft_id = ? ORDER BY created_at", (draft_id,)).fetchall()
+        a = c.execute("SELECT * FROM audit_log WHERE draft_id = ? ORDER BY at", (draft_id,)).fetchall()
     return {"draft": draft_out(d), "findings": [finding_out(r) for r in f],
             "comments": [comment_out(r) for r in cm], "decisions": [decision_out(r) for r in dc],
             "versions": [{"id": r["id"], "draftId": r["draft_id"], "content": r["content"],
-                          "note": r["note"], "createdAt": r["created_at"]} for r in v]}
+                          "note": r["note"], "createdAt": r["created_at"]} for r in v],
+            "activity": [{"at": r["at"], "actor": r["actor"], "role": r["role"],
+                          "action": r["action"], "detail": r["detail"]} for r in a]}
 
 
 @router.patch("/drafts/{draft_id}")
@@ -416,8 +419,14 @@ def decide(draft_id: str, body: DecisionIn):
     with conn() as c:
         c.execute("BEGIN IMMEDIATE")
         d = need_draft(c, draft_id)
+        if d["status"] == "approved":
+            raise HTTPException(409, "This draft is already approved")
         if d["status"] != "in_review":
-            raise HTTPException(409, "Submit the draft for review first")
+            c.execute(
+                "UPDATE drafts SET status = 'in_review', updated_at = ? WHERE id = ?",
+                (now(), draft_id),
+            )
+            audit(c, body.byName, body.byRole, "auto_submitted_for_review", draft_id)
         c.execute("INSERT INTO decisions VALUES (?,?,?,?,?,?,?)",
                   (did, draft_id, body.type, body.byName, body.byRole, body.note, now()))
         c.execute("UPDATE drafts SET status = ?, updated_at = ? WHERE id = ?", (body.type, now(), draft_id))

@@ -116,8 +116,8 @@ function parseBackendFinding(value: unknown, expectedDraftId: string): Finding {
   if (severity !== 'low' && severity !== 'medium' && severity !== 'high') {
     throw new Error(`The API returned an unsupported finding severity: "${severity}".`)
   }
-  const start = value.start
-  const end = value.end
+  const start = value.startOffset ?? value.start
+  const end = value.endOffset ?? value.end
   const confidence = value.confidence
   if (typeof confidence !== 'number' || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
     throw new Error('The API returned an invalid finding: "confidence" must be a number between 0 and 1.')

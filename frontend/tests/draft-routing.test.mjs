@@ -26,12 +26,62 @@ function draftDetail(id) {
   }
 }
 
+function finding(id, quote, offsets = {}) {
+  return {
+    id,
+    draftId: 'd_demo1',
+    category: 'claim',
+    severity: 'medium',
+    quote,
+    reason: 'Check this occurrence.',
+    sourceQuote: 'approved guidance',
+    sourceName: 'Claims guidance',
+    suggestedFix: 'Revise this wording.',
+    confidence: 0.9,
+    isAI: true,
+    status: 'open',
+    ...offsets,
+  }
+}
+
 function jsonResponse(value, status = 200) {
   return new Response(JSON.stringify(value), {
     status,
     headers: { 'Content-Type': 'application/json' },
   })
 }
+
+test('draft details parse persisted startOffset/endOffset for repeated quotes', async () => {
+  globalThis.fetch = async () => jsonResponse({
+    ...draftDetail('d_demo1'),
+    draft: {
+      ...draftDetail('d_demo1').draft,
+      content: 'echo / echo',
+    },
+    findings: [finding('second-echo', 'echo', { startOffset: 7, endOffset: 11 })],
+  })
+
+  const result = await getDraftDetail('d_demo1')
+
+  assert.equal(result.findings[0].startOffset, 7)
+  assert.equal(result.findings[0].endOffset, 11)
+  assert.equal(result.draft.content.slice(
+    result.findings[0].startOffset,
+    result.findings[0].endOffset,
+  ), result.findings[0].quote)
+})
+
+test('draft details retain compatibility with legacy start/end offsets', async () => {
+  globalThis.fetch = async () => jsonResponse({
+    ...draftDetail('d_demo1'),
+    findings: [finding('legacy-offsets', 'quote', { start: 4, end: 9 })],
+  })
+
+  const result = await getDraftDetail('d_demo1')
+
+  assert.equal(result.findings[0].startOffset, 4)
+  assert.equal(result.findings[0].endOffset, 9)
+})
 
 test('the product-page route alias loads permanent draft d_demo6', async () => {
   const requests = []

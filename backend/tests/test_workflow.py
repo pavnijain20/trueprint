@@ -10,10 +10,29 @@ from app import workflow as wf
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
     monkeypatch.setattr(wf, "DB", tmp_path / "workflow.db")
+    monkeypatch.setattr(wf, "source_name", lambda sid: sid)
+    monkeypatch.setattr(wf, "review_text", lambda text: FAKE)
     wf.init()
     app = FastAPI()
     app.include_router(wf.router)
     return TestClient(app)
+
+
+FAKE = {
+    "findings": [{
+        "category": "claim",
+        "severity": "high",
+        "flagged_text": "x",
+        "reason": "r",
+        "confidence": 1.0,
+        "origin": "ai",
+        "validated": True,
+        "source": {"id": "guide_02", "quote": "q"},
+        "suggested_fix": "fix",
+    }],
+    "risk": {"level": "High"},
+    "error": None,
+}
 
 
 def new_draft(client):
@@ -41,6 +60,13 @@ def test_initialization_creates_permanent_product_page_demo(client):
     assert draft["status"] == "in_review"
     assert draft["content"] == wf.PRODUCT_PAGE_DEMO["content"]
     assert len(response.json()["versions"]) == 1
+    stable_demo_ids = {
+        draft["id"] for draft in client.get("/api/drafts").json()
+        if draft["id"] in {f"d_demo{index}" for index in range(1, 6)}
+    }
+    assert stable_demo_ids == {f"d_demo{index}" for index in range(1, 6)}
+    activity_actions = {event["action"] for event in response.json()["activity"]}
+    assert {"draft_created", "submitted_for_review"} <= activity_actions
     with wf.conn() as connection:
         events = connection.execute(
             "SELECT actor, role, action, draft_id, detail, at FROM audit_log "
@@ -387,7 +413,7 @@ def test_submission_persists_and_reviewer_can_request_changes(client):
     assert decision_event["detail"] == "Please revise the wording."
 
 
-def test_content_edit_before_request_changes_requires_resubmission(client):
+def test_content_edit_before_decision_is_auto_submitted(client):
     draft_id = new_draft(client)
     client.post(f"/api/drafts/{draft_id}/submit", json={"by": "Author", "role": "author"})
 
@@ -407,10 +433,11 @@ def test_content_edit_before_request_changes_requires_resubmission(client):
 
     assert changed.status_code == 200
     assert changed.json()["status"] == "draft"
-    assert decision.status_code == 409
+    assert decision.status_code == 200
     detail = client.get(f"/api/drafts/{draft_id}").json()
-    assert detail["draft"]["status"] == "draft"
-    assert detail["decisions"] == []
+    assert detail["draft"]["status"] == "changes_requested"
+    assert detail["decisions"][0]["type"] == "changes_requested"
+    assert any(event["action"] == "auto_submitted_for_review" for event in detail["activity"])
 
 
 def test_author_can_edit_after_changes_requested_and_must_resubmit(client):
@@ -526,10 +553,21 @@ def test_reviewer_cannot_approve_submitted_draft(client):
 
 
 @pytest.mark.parametrize(
-    ("decision_type", "role"),
-    [("approved", "approver"), ("changes_requested", "reviewer")],
+    ("decision_type", "role", "expected_status"),
+    [
+        ("approved", "approver", 200),
+        ("approved", "admin", 200),
+        ("approved", "reviewer", 403),
+        ("approved", "author", 403),
+        ("changes_requested", "reviewer", 200),
+        ("changes_requested", "approver", 200),
+        ("changes_requested", "admin", 200),
+        ("changes_requested", "author", 403),
+    ],
 )
-def test_unsubmitted_draft_rejects_decisions(client, decision_type, role):
+def test_decision_role_permissions_and_auto_submission(
+    client, decision_type, role, expected_status,
+):
     draft_id = new_draft(client)
     response = client.post(
         f"/api/drafts/{draft_id}/decision",
@@ -541,10 +579,16 @@ def test_unsubmitted_draft_rejects_decisions(client, decision_type, role):
         },
     )
 
-    assert response.status_code == 409
+    assert response.status_code == expected_status
     detail = client.get(f"/api/drafts/{draft_id}").json()
-    assert detail["draft"]["status"] == "draft"
-    assert detail["decisions"] == []
+    if expected_status == 403:
+        assert detail["draft"]["status"] == "draft"
+        assert detail["decisions"] == []
+        assert not any(event["action"] == "auto_submitted_for_review" for event in detail["activity"])
+        return
+    assert detail["draft"]["status"] == decision_type
+    assert detail["decisions"][0]["type"] == decision_type
+    assert any(event["action"] == "auto_submitted_for_review" for event in detail["activity"])
 
 
 def test_author_cannot_decide_submitted_draft(client):
@@ -562,7 +606,7 @@ def test_author_cannot_decide_submitted_draft(client):
     assert detail["decisions"] == []
 
 
-def test_changed_content_requires_resubmission(client):
+def test_changed_content_is_auto_submitted_when_decided(client):
     draft_id = new_draft(client)
     submitted = client.post(
         f"/api/drafts/{draft_id}/submit",
@@ -583,10 +627,11 @@ def test_changed_content_requires_resubmission(client):
 
     assert changed.status_code == 200
     assert changed.json()["status"] == "draft"
-    assert decision.status_code == 409
+    assert decision.status_code == 200
     detail = client.get(f"/api/drafts/{draft_id}").json()
-    assert detail["draft"]["status"] == "draft"
-    assert detail["decisions"] == []
+    assert detail["draft"]["status"] == "approved"
+    assert detail["decisions"][0]["type"] == "approved"
+    assert any(event["action"] == "auto_submitted_for_review" for event in detail["activity"])
 
 
 def test_finding_actions_persist_in_audit_and_preserve_sibling_statuses(client):
@@ -685,3 +730,55 @@ def test_concurrent_decisions_create_only_one_record(client):
     assert sum(result != 409 for result in results) == 1
     assert results.count(409) == 1
     assert len(client.get(f"/api/drafts/{draft_id}").json()["decisions"]) == 1
+
+
+def test_review_saves_findings_in_frontend_shape(client):
+    did = new_draft(client)
+    f = client.post(f"/api/drafts/{did}/review").json()["findings"][0]
+    assert f["sourceName"] == "guide_02" and f["isAI"] is True and f["status"] == "open"
+
+
+def test_dismiss_needs_a_reason(client):
+    did = new_draft(client)
+    fid = client.post(f"/api/drafts/{did}/review").json()["findings"][0]["id"]
+    assert client.patch(f"/api/findings/{fid}", json={"status": "dismissed"}).status_code == 400
+    ok = client.patch(f"/api/findings/{fid}", json={"status": "dismissed", "reason": "not relevant"})
+    assert ok.status_code == 200 and ok.json()["status"] == "dismissed"
+
+
+def test_author_and_reviewer_cannot_approve_but_approver_can(client):
+    did = new_draft(client)
+    client.post(f"/api/drafts/{did}/submit", json={})
+    author = client.post(
+        f"/api/drafts/{did}/decision",
+        json={"type": "approved", "byName": "A", "byRole": "author"},
+    )
+    reviewer = client.post(
+        f"/api/drafts/{did}/decision",
+        json={"type": "approved", "byName": "R", "byRole": "reviewer"},
+    )
+    approver = client.post(
+        f"/api/drafts/{did}/decision",
+        json={"type": "approved", "byName": "P", "byRole": "approver"},
+    )
+    assert author.status_code == 403
+    assert reviewer.status_code == 403
+    assert approver.status_code == 200
+    assert client.get(f"/api/drafts/{did}").json()["draft"]["status"] == "approved"
+
+
+def test_approved_draft_is_locked_and_audit_is_kept(client):
+    did = new_draft(client)
+    client.post(f"/api/drafts/{did}/submit", json={})
+    client.post(f"/api/drafts/{did}/decision", json={"type": "approved", "byName": "R", "byRole": "approver"})
+    assert client.patch(f"/api/drafts/{did}", json={"content": "new"}).status_code == 409
+    assert len(client.get("/api/audit").json()) >= 3
+
+def test_decision_works_even_if_not_submitted_yet(client):
+    did = new_draft(client)
+    r = client.post(f"/api/drafts/{did}/decision", json={"type": "changes_requested", "byName": "R", "byRole": "reviewer"})
+    assert r.status_code == 200
+    r2 = client.post(f"/api/drafts/{did}/decision", json={"type": "approved", "byName": "P", "byRole": "approver"})
+    assert r2.status_code == 200
+    data = client.get(f"/api/drafts/{did}").json()
+    assert data["draft"]["status"] == "approved" and len(data["activity"]) >= 3
