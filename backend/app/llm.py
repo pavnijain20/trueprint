@@ -12,7 +12,18 @@ _cache = json.loads(CACHE_FILE.read_text()) if CACHE_FILE.exists() else {}
 DEMO_CACHE_FILE = Path(__file__).resolve().parent.parent / "demo_cache.json"
 _demo = json.loads(DEMO_CACHE_FILE.read_text()) if DEMO_CACHE_FILE.exists() else {}
 _lock = threading.Lock()
-_client = genai.Client(api_key=os.getenv("LLM_API_KEY"))
+_client = None
+
+
+def _get_client():
+    """Create the Gemini client only when needed, so the app and tests import without a key."""
+    global _client
+    if _client is None:
+        key = os.getenv("LLM_API_KEY")
+        if not key:
+            return None
+        _client = genai.Client(api_key=key)
+    return _client
 MODEL = os.getenv("LLM_MODEL", "gemini-flash-latest")
 FALLBACK = os.getenv("LLM_FALLBACK_MODEL", "")
 
@@ -44,6 +55,10 @@ def call_llm(system: str, user: str, retries: int = 3):
             return _cache[k]
         if k in _demo:
             return _demo[k]
+            client = _get_client()
+    if client is None:
+        print("LLM_API_KEY is not set: live AI is unavailable (saved demo responses still work).")
+        return None
     models = [MODEL] + ([FALLBACK] if FALLBACK and FALLBACK != MODEL else [])
     for model in models:
         for attempt in range(retries):
