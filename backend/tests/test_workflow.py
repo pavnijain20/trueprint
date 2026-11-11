@@ -797,3 +797,13 @@ def test_self_correct_suggests_but_never_changes_the_draft(client, monkeypatch):
 
 def test_self_correct_unknown_draft_is_404(client):
     assert client.post("/api/drafts/nope/self-correct").status_code == 404
+
+def test_insights_summary_is_labelled_sample_when_data_is_thin(client):
+    out = client.get("/api/insights/summary").json()
+    assert out["isSample"] is True and out["realEvents"] == 0 and out["sampleEvents"] > 0
+    assert any(r["verdict"] == "likely_unclear" for r in out["rules"])
+
+
+def test_reliability_returns_the_saved_report(client):
+    out = client.get("/api/reliability").json()
+    assert "precision" in out["summary"] and len(out["rows"]) >= 1
