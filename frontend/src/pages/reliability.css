@@ -1,0 +1,26 @@
+.reliability-page { width: 100%; }
+.reliability-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.reliability-card { min-width: 0; padding: 16px; border: 1px solid var(--line); border-top: 3px solid var(--forest); background: var(--paper); }
+.reliability-card h2 { margin: 0 0 10px; color: #405248; font-size: 0.8rem; font-weight: 750; line-height: 1.4; }
+.reliability-card p { margin: 0; color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.35rem, 2.4vw, 2rem); line-height: 1.2; }
+.reliability-table-wrap { overflow-x: auto; border: 1px solid var(--line); background: #fff; }
+.reliability-table-wrap:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.reliability-table { width: 100%; border-collapse: collapse; text-align: left; }
+.reliability-table caption { padding: 12px 14px; color: #34443a; font-size: 0.85rem; text-align: left; }
+.reliability-table th, .reliability-table td { min-width: 120px; padding: 10px 12px; border-bottom: 1px solid var(--line); color: #26382c; font-size: 0.84rem; vertical-align: top; }
+.reliability-table thead th { background: #edf2eb; font-weight: 750; }
+.reliability-table tbody th { font-weight: 650; }
+.reliability-table pre { max-width: 420px; margin: 0; color: #34443a; font: inherit; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.reliability-table .reliability-group-heading th { min-width: 0; background: #f1f4f1; color: #26382c; font-size: 0.88rem; font-weight: 800; }
+.reliability-mismatch { display: inline-block; margin: 0 7px 4px 0; padding: 3px 6px; border: 1px solid #8a3d20; background: #f9ece6; color: #672e13; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
+.reliability-note { margin: 18px 0 0; padding: 13px 15px; border-left: 4px solid var(--forest); background: #eaf1ec; color: #26382c; font-size: 0.9rem; font-weight: 700; line-height: 1.5; }
+.reliability-empty, .reliability-state { margin: 0; padding: 18px; border: 1px solid var(--line); background: #fff; color: #34443a; line-height: 1.55; }
+.reliability-state p { margin: 0; }
+.reliability-state[aria-busy="true"] { border: 0; background: transparent; }
+.reliability-error { border-left: 4px solid #8a3d20; }
+.reliability-error h1 { margin: 0 0 8px; color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.7rem, 3vw, 2.2rem); font-weight: 500; }
+.reliability-error button { margin-top: 14px; }
+
+@media (max-width: 600px) {
+  .reliability-table th, .reliability-table td { padding: 8px; }
+}

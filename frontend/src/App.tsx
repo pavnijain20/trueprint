@@ -8,6 +8,7 @@ import { DraftsPage } from './pages/DraftsPage'
 import { InsightsPage } from './pages/InsightsPage'
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage'
 import { LoginPage } from './pages/LoginPage'
+import { ReliabilityPage } from './pages/ReliabilityPage'
 
 function ProtectedRoute() {
   const { user } = useAuth()
@@ -76,6 +77,11 @@ function RouteTitle() {
       return
     }
 
+    if (pathname === '/reliability') {
+      document.title = 'Reliability | TruePrint'
+      return
+    }
+
     document.title = 'Page not found | TruePrint'
   }, [pathname, user])
 
@@ -94,6 +100,7 @@ export default function App() {
           <Route path="/drafts/:id" element={<DraftEditorPage />} />
           <Route path="/knowledge-base" element={<KnowledgeBaseRoute />} />
           <Route path="/insights" element={<InsightsPage />} />
+          <Route path="/reliability" element={<ReliabilityPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

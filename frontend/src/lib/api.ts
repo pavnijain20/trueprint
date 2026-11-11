@@ -12,6 +12,7 @@ import type {
   ReviewResponse,
   ReviewRisk,
   ReviewRiskContribution,
+  User,
 } from '../types'
 
 export interface BackendFinding {
@@ -29,9 +30,60 @@ export interface BackendFinding {
   status: string
 }
 
+export interface InsightsResponse {
+  total_findings: number
+  recurring_categories: [string, number][]
+  by_team: Record<string, Record<string, number>>
+  rules: {
+    source_id: string
+    flagged: number
+    dismissed: number
+    dismiss_rate: number
+    clarity_score: number | null
+    verdict: 'not_enough_data' | 'likely_unclear' | 'often_broken' | 'ok'
+  }[]
+  isSample?: boolean
+  dismissReasons?: string[]
+}
+
+export interface ReliabilityResponse {
+  summary: {
+    drafts: number
+    precision: number
+    recall: number
+    unvalidated_citation_rate: number
+    drafts_with_ai_error: number
+  }
+  rows: {
+    draft: string
+    expected: unknown
+    predicted: unknown
+    findings: unknown
+  }[]
+}
+
+export interface SelfCorrectAttempt {
+  attempt: number
+  revised: string
+  missingProof: string
+  remaining: number
+}
+
+export interface SelfCorrectResponse {
+  status: 'resolved' | 'needs_human' | 'clean' | 'ai_unavailable'
+  original: string
+  suggestedDraft: string | null
+  attempts: SelfCorrectAttempt[]
+  autoApplied: false
+}
+
 function apiBaseUrl() {
   const configuredUrl = import.meta.env?.VITE_API_URL?.trim().replace(/\/+$/, '')
   return configuredUrl || 'https://trueprint-api-iciu.onrender.com'
+}
+
+export function isLiveApi(): boolean {
+  return Boolean(import.meta.env?.VITE_API_URL?.trim())
 }
 
 const permanentDraftIds: Readonly<Record<string, string>> = {
@@ -67,7 +119,7 @@ class ApiRequestError extends Error {
   }
 }
 
-async function request(path: string, init?: RequestInit): Promise<Response> {
+async function requestResponse(path: string, init?: RequestInit): Promise<Response> {
   const response = await fetch(`${apiBaseUrl()}${path}`, init)
   if (!response.ok) {
     const body = await response.text()
@@ -88,8 +140,192 @@ async function request(path: string, init?: RequestInit): Promise<Response> {
   return response
 }
 
+export async function request<T>(
+  path: string,
+  init?: RequestInit,
+  timeoutMs = 90_000,
+): Promise<T> {
+  const controller = new AbortController()
+  let timedOut = false
+  const timeoutId = window.setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, timeoutMs)
+  const headers = new Headers(init?.headers)
+  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  const abortFromCaller = () => controller.abort(init?.signal?.reason)
+
+  if (init?.signal?.aborted) {
+    abortFromCaller()
+  } else {
+    init?.signal?.addEventListener('abort', abortFromCaller, { once: true })
+  }
+
+  try {
+    const response = await fetch(`${apiBaseUrl()}${path}`, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    })
+    if (!response.ok) {
+      const body = await response.text()
+      let detail = ''
+      if (body.trim()) {
+        try {
+          const parsed: unknown = JSON.parse(body)
+          if (isRecord(parsed) && typeof parsed.detail === 'string') {
+            detail = parsed.detail
+          }
+        } catch (parseFailure) {
+          if (!(parseFailure instanceof SyntaxError)) throw parseFailure
+        }
+      }
+      throw new ApiRequestError(
+        response.status,
+        detail || `API request failed (${response.status}).`,
+      )
+    }
+    return await response.json() as T
+  } catch (error) {
+    if (timedOut) {
+      throw new Error('The server took too long to respond. It may be waking up - please try again.', { cause: error })
+    }
+    throw error
+  } finally {
+    window.clearTimeout(timeoutId)
+    init?.signal?.removeEventListener('abort', abortFromCaller)
+  }
+}
+
+function parseSelfCorrectResponse(value: unknown): SelfCorrectResponse {
+  if (!isRecord(value) || !Array.isArray(value.attempts)) {
+    throw new Error('The API returned an invalid self-correction response.')
+  }
+  const status = value.status
+  if (
+    status !== 'resolved'
+    && status !== 'needs_human'
+    && status !== 'clean'
+    && status !== 'ai_unavailable'
+  ) {
+    throw new Error('The API returned an unsupported self-correction status.')
+  }
+  const original = requiredString(value, 'original', 'self-correction response')
+  const suggestedDraft = value.suggestedDraft
+  if (suggestedDraft !== null && typeof suggestedDraft !== 'string') {
+    throw new Error('The API returned an invalid self-correction response: "suggestedDraft" must be a string or null.')
+  }
+  if (value.autoApplied !== false) {
+    throw new Error('The API returned an invalid self-correction response: suggestions must not be applied automatically.')
+  }
+
+  const attempts = value.attempts.map((attemptValue): SelfCorrectAttempt => {
+    if (!isRecord(attemptValue)) {
+      throw new Error('The API returned an invalid self-correction attempt.')
+    }
+    const attempt = attemptValue.attempt
+    const remaining = attemptValue.remaining
+    if (!Number.isInteger(attempt) || typeof attempt !== 'number') {
+      throw new Error('The API returned an invalid self-correction attempt number.')
+    }
+    if (!Number.isInteger(remaining) || typeof remaining !== 'number' || remaining < 0) {
+      throw new Error('The API returned an invalid remaining findings count.')
+    }
+    return {
+      attempt,
+      revised: requiredString(attemptValue, 'revised', 'self-correction attempt'),
+      missingProof: requiredString(attemptValue, 'missingProof', 'self-correction attempt'),
+      remaining,
+    }
+  })
+
+  return {
+    status,
+    original,
+    suggestedDraft,
+    attempts,
+    autoApplied: false,
+  }
+}
+
+function mockSelfCorrectDraft(original: string): SelfCorrectResponse {
+  const suggestedDraft = original.replace(
+    /clinically proven to remove acne in 7 days/gi,
+    'Dermatologist-tested for daily skincare',
+  )
+  return {
+    status: 'resolved',
+    original,
+    suggestedDraft,
+    attempts: [
+      {
+        attempt: 1,
+        revised: suggestedDraft,
+        missingProof: "No approved source supports 'clinically proven'",
+        remaining: 1,
+      },
+      {
+        attempt: 2,
+        revised: suggestedDraft,
+        missingProof: '',
+        remaining: 0,
+      },
+    ],
+    autoApplied: false,
+  }
+}
+
+export async function selfCorrectDraft(
+  draftId: string,
+  timeoutMs = 90_000,
+  original = '',
+): Promise<SelfCorrectResponse> {
+  if (import.meta.env?.VITE_MOCK_SELF_CORRECT === 'true') {
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 3_000))
+    return mockSelfCorrectDraft(original)
+  }
+  const value = await request<unknown>(
+    `/api/drafts/${encodeURIComponent(draftId)}/self-correct`,
+    { method: 'POST' },
+    timeoutMs,
+  )
+  return parseSelfCorrectResponse(value)
+}
+
+export async function applyDraftSuggestion(
+  draftId: string,
+  content: string,
+  user: Pick<User, 'name' | 'role'>,
+): Promise<string> {
+  if (import.meta.env?.VITE_MOCK_SELF_CORRECT === 'true') return content
+  let value: unknown
+  try {
+    value = await request<unknown>(`/api/drafts/${encodeURIComponent(draftId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        content,
+        by: user.name,
+        role: user.role,
+        note: 'Applied AI suggestion',
+      }),
+    })
+  } catch (failure) {
+    if (failure instanceof ApiRequestError && failure.status === 409) {
+      throw new Error('This draft is approved and locked. The suggestion could not be applied.', {
+        cause: failure,
+      })
+    }
+    throw failure
+  }
+  const updatedDraft = parseDraft(value)
+  if (updatedDraft.id !== draftId) {
+    throw new Error('The API updated a different draft than the one requested.')
+  }
+  return updatedDraft.content
+}
+
 async function getJson(path: string, signal?: AbortSignal): Promise<unknown> {
-  const response = await request(path, {
+  const response = await requestResponse(path, {
     cache: 'no-store',
     ...(signal ? { signal } : {}),
   })
@@ -338,8 +574,88 @@ export async function getActivityFeed(): Promise<ActivityEvent[]> {
   return value.map(parseActivityEvent)
 }
 
+export async function getInsights(): Promise<InsightsResponse> {
+  return request<InsightsResponse>('/api/insights')
+}
+
+function mockReliabilityResponse(): ReliabilityResponse {
+  return {
+    summary: {
+      drafts: 9,
+      precision: 0.82,
+      recall: 0.76,
+      unvalidated_citation_rate: 0.04,
+      drafts_with_ai_error: 1,
+    },
+    rows: [
+      { draft: 'Spring skincare campaign', expected: ['unsupported claim'], predicted: ['unsupported claim'], findings: ['Flagged unsupported efficacy claim'] },
+      { draft: 'Customer welcome email', expected: ['approved sign-off'], predicted: ['approved sign-off'], findings: ['Flagged missing approved sign-off'] },
+      { draft: 'Product launch page', expected: ['unverified statistic'], predicted: [], findings: [] },
+      { draft: 'Summer promotion', expected: ['uncited product claim'], predicted: ['uncited product claim'], findings: ['Flagged uncited product claim'] },
+      { draft: 'Support response template', expected: [], predicted: ['tone mismatch'], findings: ['Flagged tone mismatch'] },
+      { draft: 'Partner announcement', expected: ['partner name format'], predicted: ['partner name format'], findings: ['Flagged partner name format'] },
+      { draft: 'Feature comparison sheet', expected: ['missing citation'], predicted: ['missing citation'], findings: ['Flagged missing citation'] },
+      { draft: 'Internal event invite', expected: [], predicted: [], findings: [] },
+      { draft: 'Mobile app release note', expected: ['accessibility claim'], predicted: ['accessibility claim'], findings: ['Flagged accessibility claim'] },
+    ],
+  }
+}
+
+function parseReliabilityResponse(value: unknown): ReliabilityResponse {
+  if (!isRecord(value) || !Array.isArray(value.rows)) {
+    throw new Error('The API returned an invalid reliability response.')
+  }
+  const summary = value.summary
+  if (!isRecord(summary)) throw new Error('The API returned an invalid reliability response.')
+  const numericMetric = (key:
+    | 'drafts'
+    | 'precision'
+    | 'recall'
+    | 'unvalidated_citation_rate'
+    | 'drafts_with_ai_error'): number => {
+    const metric = summary[key]
+    if (typeof metric !== 'number' || !Number.isFinite(metric)) {
+      throw new Error(`The API returned an invalid reliability summary: "${key}" must be a number.`)
+    }
+    return metric
+  }
+  const rows = value.rows.map((row): ReliabilityResponse['rows'][number] => {
+    if (!isRecord(row) || typeof row.draft !== 'string') {
+      throw new Error('The API returned an invalid reliability test row.')
+    }
+    return {
+      draft: row.draft,
+      expected: row.expected,
+      predicted: row.predicted,
+      findings: row.findings,
+    }
+  })
+  return {
+    summary: {
+      drafts: numericMetric('drafts'),
+      precision: numericMetric('precision'),
+      recall: numericMetric('recall'),
+      unvalidated_citation_rate: numericMetric('unvalidated_citation_rate'),
+      drafts_with_ai_error: numericMetric('drafts_with_ai_error'),
+    },
+    rows,
+  }
+}
+
+export async function getReliability(): Promise<ReliabilityResponse> {
+  if (import.meta.env?.VITE_MOCK_RELIABILITY === 'true') {
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 850))
+    return mockReliabilityResponse()
+  }
+  if (!isLiveApi()) {
+    throw new Error('Reliability results are unavailable because VITE_API_URL is not configured.')
+  }
+  const value = await request<unknown>('/api/reliability')
+  return parseReliabilityResponse(value)
+}
+
 async function sendJson(path: string, method: string, body?: unknown, signal?: AbortSignal): Promise<void> {
-  await request(path, {
+  await requestResponse(path, {
     method,
     ...(body === undefined ? {} : {
       headers: { 'Content-Type': 'application/json' },
@@ -352,6 +668,7 @@ async function sendJson(path: string, method: string, body?: unknown, signal?: A
 export async function reviewDraft(draftId: string): Promise<ReviewResponse> {
   const controller = new AbortController()
   const timeoutId = window.setTimeout(() => controller.abort(), 60_000)
+  const request = requestResponse
   try {
     const response = await request(
       `/api/drafts/${encodeURIComponent(draftId)}/review`,
@@ -373,11 +690,32 @@ export async function reviewDraft(draftId: string): Promise<ReviewResponse> {
 }
 
 export async function updateDraftContent(draftId: string, content: string, by: string, role: string): Promise<void> {
-  await request(`/api/drafts/${encodeURIComponent(draftId)}`, {
+  await requestResponse(`/api/drafts/${encodeURIComponent(draftId)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content, by, role }),
   })
+}
+
+export async function restoreDraftVersion(
+  draftId: string,
+  versionId: string,
+  by: string,
+  role: string,
+): Promise<Draft> {
+  const response = await requestResponse(
+    `/api/drafts/${encodeURIComponent(draftId)}/versions/${encodeURIComponent(versionId)}/restore`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ by, role }),
+    },
+  )
+  const restoredDraft = parseDraft(await response.json() as unknown)
+  if (restoredDraft.id !== draftId) {
+    throw new Error('The API restored a different draft than the one requested.')
+  }
+  return restoredDraft
 }
 
 export async function updateFinding(
@@ -388,7 +726,7 @@ export async function updateFinding(
   role: string,
   reason?: string,
 ): Promise<Finding> {
-  const response = await request(`/api/findings/${encodeURIComponent(findingId)}`, {
+  const response = await requestResponse(`/api/findings/${encodeURIComponent(findingId)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status, by, role, ...(reason === undefined ? {} : { reason }) }),
@@ -397,7 +735,7 @@ export async function updateFinding(
 }
 
 export async function submitDraft(draftId: string, by: string, role: string): Promise<Draft> {
-  const response = await request(`/api/drafts/${encodeURIComponent(draftId)}/submit`, {
+  const response = await requestResponse(`/api/drafts/${encodeURIComponent(draftId)}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ by, role }),

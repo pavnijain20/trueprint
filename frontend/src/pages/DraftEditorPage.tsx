@@ -5,6 +5,7 @@ import { CommentsPanel } from '../components/CommentsPanel'
 import { DecisionBar } from '../components/DecisionBar'
 import { DiffView } from '../components/DiffView'
 import { FindingsPanel } from '../components/FindingsPanel'
+import { SelfCorrectPanel } from '../components/SelfCorrectPanel'
 import { EmptyState, ErrorState, LoadingState } from '../components/States'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -14,48 +15,205 @@ import {
   getActivityFeed,
   getDraftDetail,
   reviewDraft,
+  restoreDraftVersion,
   submitDraft,
   updateDraftContent,
   updateFinding,
 } from '../lib/api'
-import { decodeHtmlEntities } from '../lib/diff'
-import type { ActivityEvent, DraftDetail, Finding, FindingStatus } from '../types'
+import type { ActivityEvent, DraftDetail, DraftVersion, Finding, FindingStatus } from '../types'
 import './drafts.css'
 
-function findPreviousVersion(
-  versions: DraftDetail['versions'],
-  currentContent: string,
-  currentUpdatedAt: string,
-) {
-  const currentTimestamp = Date.parse(currentUpdatedAt)
-  if (!Number.isFinite(currentTimestamp)) return undefined
+interface VersionComparisonOption {
+  id: string
+  content: string
+  label: string
+  current: boolean
+}
 
-  const currentText = decodeHtmlEntities(currentContent)
-  const parsedVersions = versions.flatMap((version) => {
-    if (!version.createdAt) return []
-    const timestamp = Date.parse(version.createdAt)
-    return Number.isFinite(timestamp)
-      ? [{ version, timestamp, content: decodeHtmlEntities(version.content) }]
-      : []
-  })
-  if (parsedVersions.some((item) => item.timestamp === currentTimestamp && item.content !== currentText)) {
-    return undefined
+function versionTimestamp(value?: string): number | null {
+  if (!value) return null
+  const timestamp = Date.parse(value)
+  return Number.isFinite(timestamp) ? timestamp : null
+}
+
+function formatVersionTimestamp(value?: string): string {
+  const timestamp = versionTimestamp(value)
+  if (timestamp === null) return 'Timestamp unavailable'
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(timestamp)
+}
+
+function VersionHistoryBrowser({
+  draftId,
+  versions,
+  currentContent,
+  canRestore,
+  restoringVersionId,
+  onRestoreVersion,
+}: {
+  draftId: string
+  versions: readonly DraftVersion[]
+  currentContent: string
+  canRestore: boolean
+  restoringVersionId: string | null
+  onRestoreVersion: (version: DraftVersion, label: string) => void
+}) {
+  const [fromVersionId, setFromVersionId] = useState<string | null>(null)
+  const [toVersionId, setToVersionId] = useState<string | null>(null)
+  const orderedVersions = versions
+    .map((version, index) => ({ version, index, timestamp: versionTimestamp(version.createdAt) }))
+    .sort((first, second) => {
+      if (first.timestamp !== null && second.timestamp !== null) {
+        return first.timestamp - second.timestamp || first.index - second.index
+      }
+      if (first.timestamp !== null) return -1
+      if (second.timestamp !== null) return 1
+      return first.index - second.index
+    })
+  const currentVersionId = [...orderedVersions]
+    .reverse()
+    .find(({ version }) => version.content === currentContent)?.version.id ?? null
+
+  const options: VersionComparisonOption[] = orderedVersions.map(({ version }, index) => ({
+    id: `version:${version.id}`,
+    content: version.content,
+    label: `Version ${index + 1}`,
+    current: version.id === currentVersionId,
+  }))
+  if (versions.length > 0 && currentVersionId === null) {
+    options.push({
+      id: `current-draft:${draftId}`,
+      content: currentContent,
+      label: 'Current draft (not a saved version)',
+      current: true,
+    })
   }
-  const timestampedVersions = parsedVersions
-    .filter((item) => item.timestamp < currentTimestamp)
-    .sort((first, second) => second.timestamp - first.timestamp)
 
-  for (let index = 0; index < timestampedVersions.length;) {
-    const timestamp = timestampedVersions[index].timestamp
-    const sameTimestamp = timestampedVersions.filter((item) => item.timestamp === timestamp)
-    const distinctContents = new Set(sameTimestamp.map((item) => item.content))
-    if (distinctContents.size > 1) return undefined
-    const candidate = sameTimestamp[0]
-    if (candidate && candidate.content !== currentText) return candidate.version
-    index += sameTimestamp.length
-  }
+  const firstOption = options[0]
+  const currentOption = options.find((option) => option.current)
+  const lastOption = options[options.length - 1]
+  const defaultFrom = firstOption
+  const defaultTo = options.length > 1 ? currentOption ?? lastOption : firstOption
+  const fromVersion = options.find((option) => option.id === fromVersionId) ?? defaultFrom
+  const toVersion = options.find((option) => option.id === toVersionId) ?? defaultTo
 
-  return undefined
+  return (
+    <section aria-labelledby={`version-history-title-${draftId}`} className="version-history">
+      <h3 id={`version-history-title-${draftId}`}>Version history</h3>
+      {orderedVersions.length === 0 ? (
+        <p className="version-history-empty" role="status">
+          No saved versions are available for this draft yet.
+        </p>
+      ) : (
+        <>
+          {currentVersionId === null && (
+            <p className="version-history-current-note">
+              <strong>Current draft (not a saved version).</strong>{' '}
+              This content is not in the saved history. It is available for comparison as
+              “Current draft” and is not shown as a saved version.
+            </p>
+          )}
+          <ol aria-label="Saved draft versions" className="version-history-list">
+            {orderedVersions.map(({ version, timestamp }, index) => (
+              <li className="version-history-item" key={version.id}>
+                <div className="version-history-item-heading">
+                  <strong>Version {index + 1}</strong>
+                  {version.id === currentVersionId && (
+                    <span className="version-current-label">Current version</span>
+                  )}
+                </div>
+                <time dateTime={timestamp === null ? undefined : version.createdAt}>
+                  {formatVersionTimestamp(version.createdAt)}
+                </time>
+                {version.note?.trim() && <p>{version.note}</p>}
+                {canRestore && version.id !== currentVersionId && (
+                  <div className="version-history-item-actions">
+                    <button
+                      aria-busy={restoringVersionId === version.id}
+                      aria-label={`Restore Version ${index + 1} to the draft`}
+                      className="secondary-button"
+                      disabled={restoringVersionId !== null}
+                      onClick={() => {
+                        const label = `Version ${index + 1}`
+                        const confirmed = window.confirm(
+                          `Restore ${label} to this draft? This will replace the current content and add a new version. Existing history will not be deleted.`,
+                        )
+                        if (confirmed) onRestoreVersion(version, label)
+                      }}
+                      type="button"
+                    >
+                      {restoringVersionId === version.id ? 'Restoring...' : `Restore Version ${index + 1}`}
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ol>
+          {options.length > 1 ? (
+            <div className="version-comparison">
+              <h4>Compare versions</h4>
+              <div className="version-comparison-controls">
+                <div className="filter-field">
+                  <label htmlFor={`version-from-${draftId}`}>Compare from</label>
+                  <select
+                    id={`version-from-${draftId}`}
+                    onChange={(event) => setFromVersionId(event.target.value)}
+                    value={fromVersion?.id ?? ''}
+                  >
+                    {options.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}{option.current ? ' — Current' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="filter-field">
+                  <label htmlFor={`version-to-${draftId}`}>Compare to</label>
+                  <select
+                    id={`version-to-${draftId}`}
+                    onChange={(event) => setToVersionId(event.target.value)}
+                    value={toVersion?.id ?? ''}
+                  >
+                    {options.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}{option.current ? ' — Current' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {fromVersion && toVersion && fromVersion.id === toVersion.id ? (
+                <p className="version-history-empty" role="status">
+                  Choose two different versions to compare.
+                </p>
+              ) : fromVersion && toVersion ? (
+                <div className="version-diff-result">
+                  <h4 aria-atomic="true" aria-live="polite">
+                    Comparison: {fromVersion.label} to {toVersion.label}
+                  </h4>
+                  <p className="version-diff-key">
+                    <span className="diff-change-label">Removed</span> from the first version
+                    <span aria-hidden="true"> · </span>
+                    <span className="diff-change-label">Added</span> in the second version
+                  </p>
+                  <DiffView
+                    currentContent={toVersion.content}
+                    previousContent={fromVersion.content}
+                  />
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <p className="version-history-empty" role="status">
+              No earlier version is available to compare yet.
+            </p>
+          )}
+        </>
+      )}
+    </section>
+  )
 }
 
 function findQuoteRanges(text: string, findings: readonly Finding[], baseOffset: number) {
@@ -178,10 +336,14 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const [reviewing, setReviewing] = useState(false)
+  const [selfCorrectOpen, setSelfCorrectOpen] = useState(false)
+  const [selfCorrectBusy, setSelfCorrectBusy] = useState(false)
+  const [suggestionNotice, setSuggestionNotice] = useState<string | null>(null)
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [mutationSuccess, setMutationSuccess] = useState<string | null>(null)
   const [mutating, setMutating] = useState(false)
+  const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null)
   const [activity, setActivity] = useState<ActivityEvent[]>([])
   const [activityError, setActivityError] = useState<string | null>(null)
   const [dismissalFindingId, setDismissalFindingId] = useState<string | null>(null)
@@ -203,7 +365,7 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
   const workflowStatusConfirmed = detailUserIdentity === userIdentity
   const canEditDraft = user?.role === 'author'
     && (draft.status === 'draft' || draft.status === 'changes_requested')
-  const previousVersion = findPreviousVersion(detail.versions, draftText, draft.updatedAt)
+  const canRestoreDraft = user?.role === 'author' && canEditDraft && workflowStatusConfirmed
   const hasOpenHighFinding = draftFindings.some(
     (finding) => finding.severity === 'high' && finding.status === 'open',
   )
@@ -332,6 +494,38 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
     }
   }
 
+  async function restoreVersion(version: DraftVersion, label: string) {
+    if (!user || !canRestoreDraft || mutating) return
+    setMutating(true)
+    setRestoringVersionId(version.id)
+    setMutationError(null)
+    setMutationSuccess(null)
+    let restoreConfirmed = false
+    try {
+      const restoredDraft = await restoreDraftVersion(draft.id, version.id, user.name, user.role)
+      restoreConfirmed = true
+      setDetail((currentDetail) => ({ ...currentDetail, draft: restoredDraft }))
+      setDraftText(restoredDraft.content)
+      const updatedDetail = await refreshDetail()
+      setDraftText(updatedDetail.draft.content)
+      await refreshActivity()
+      setMutationSuccess(`${label} restored. A new version was added to history.`)
+      setAnnouncement(`${label} restored`)
+    } catch (restoreFailure) {
+      const failureMessage = restoreFailure instanceof Error
+        ? restoreFailure.message
+        : 'The selected version could not be restored.'
+      setMutationError(
+        restoreConfirmed
+          ? `The version was restored, but the latest draft details could not be refreshed: ${failureMessage}`
+          : failureMessage,
+      )
+    } finally {
+      setRestoringVersionId(null)
+      setMutating(false)
+    }
+  }
+
   async function runReview() {
     setReviewing(true)
     setMutating(true)
@@ -356,6 +550,19 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
       setReviewing(false)
       setMutating(false)
     }
+  }
+
+  function applySuggestedContent(content: string) {
+    setDetail((currentDetail) => ({
+      ...currentDetail,
+      draft: { ...currentDetail.draft, content },
+    }))
+    setDraftText(content)
+    setEditingDraft(false)
+    setSelfCorrectOpen(false)
+    setSelfCorrectBusy(false)
+    setSuggestionNotice('Draft changed. Run AI review again to refresh findings.')
+    setAnnouncement('Suggestion applied')
   }
 
   function selectFinding(
@@ -711,19 +918,15 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
                 selectedFindingId={selectedFindingId}
               />
             ) : (
-              <>
-                <p className="editor-hint">Version history is loaded from the live backend.</p>
-                {previousVersion ? (
-                  <DiffView
-                    currentContent={draftText}
-                    previousContent={previousVersion.content}
-                  />
-                ) : (
-                  <p className="findings-empty" role="status">
-                    No previous version is available from the backend.
-                  </p>
-                )}
-              </>
+              <VersionHistoryBrowser
+                canRestore={canRestoreDraft}
+                draftId={draft.id}
+                key={`${draft.id}:${detail.versions.map((version) => version.id).join(',')}`}
+                onRestoreVersion={(version, label) => void restoreVersion(version, label)}
+                restoringVersionId={restoringVersionId}
+                versions={detail.versions}
+                currentContent={draftText}
+              />
             )}
           </div>
         </section>
@@ -734,13 +937,45 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
             <button
               aria-busy={reviewing}
               className="primary-button"
-              disabled={reviewing || mutating}
+              disabled={reviewing || mutating || selfCorrectBusy}
               onClick={() => void runReview()}
               type="button"
             >
               {reviewing ? 'Reviewing...' : 'Run AI review'}
             </button>
+            {canEditDraft && workflowStatusConfirmed && (
+              <button
+                aria-busy={selfCorrectBusy}
+                className="secondary-button"
+                disabled={reviewing || mutating || selfCorrectBusy || draftText !== draft.content}
+                onClick={() => {
+                  setSuggestionNotice(null)
+                  setSelfCorrectBusy(true)
+                  setSelfCorrectOpen(true)
+                }}
+                type="button"
+              >
+                {selfCorrectBusy ? 'Checking...' : 'Suggest a corrected draft'}
+              </button>
+            )}
           </div>
+          {canEditDraft && draftText !== draft.content && (
+            <p className="self-correct-save-hint">Save your edits before requesting a suggestion.</p>
+          )}
+          {selfCorrectOpen && canEditDraft && workflowStatusConfirmed && (
+            <SelfCorrectPanel
+              draftId={draft.id}
+              onApplied={applySuggestedContent}
+              onBusyChange={setSelfCorrectBusy}
+              onDismiss={() => {
+                setSelfCorrectOpen(false)
+                setSelfCorrectBusy(false)
+              }}
+              originalContent={draftText}
+              user={user}
+            />
+          )}
+          {suggestionNotice && <p className="review-notice" role="status">{suggestionNotice}</p>}
           {reviewError && (
             <ErrorState
               description={reviewError}
@@ -759,7 +994,7 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
             <p>Shortcuts are paused while typing in a text field.</p>
           </details>
           <FindingsPanel
-            disabled={mutating}
+            disabled={mutating || selfCorrectBusy}
             findings={draftFindings}
             onSelectFinding={(findingId) => selectFinding(findingId, 'card')}
             onStatusChange={requestFindingStatusChange}

@@ -9,6 +9,14 @@ import './drafts.css'
 
 type StatusFilter = 'all' | DraftStatus
 const quickStartKey = 'trueprint.quick-start.'
+const tryThisStorageKey = 'trueprint.try-this-guide.dismissed'
+const tryThisSteps = [
+  'Open a draft',
+  'Run AI review',
+  'Accept or dismiss findings (dismissing needs a reason)',
+  'Submit for review',
+  'Approve (switch role to Reviewer or Approver)',
+] as const
 
 const quickStartSteps: Record<Role, readonly string[]> = {
   author: [
@@ -65,6 +73,13 @@ export function DraftsPage() {
     : undefined
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
+  const [tryThisOpen, setTryThisOpen] = useState(() => {
+    try {
+      return localStorage.getItem(tryThisStorageKey) !== 'true'
+    } catch {
+      return true
+    }
+  })
   const [dismissedRoles, setDismissedRoles] = useState<Record<Role, boolean>>(() => {
     try {
       return {
@@ -78,6 +93,19 @@ export function DraftsPage() {
     }
   })
   const quickStartVisible = user ? !dismissedRoles[user.role] : false
+
+  function toggleTryThis() {
+    setTryThisOpen((current) => {
+      const next = !current
+      try {
+        if (next) localStorage.removeItem(tryThisStorageKey)
+        else localStorage.setItem(tryThisStorageKey, 'true')
+      } catch {
+        // The guide state remains available for this page session when storage is unavailable.
+      }
+      return next
+    })
+  }
 
   function dismissQuickStart() {
     if (!user) return
@@ -114,6 +142,24 @@ export function DraftsPage() {
               : `${draftCount} ${draftCount === 1 ? 'draft' : 'drafts'}`}
         </span>
       </header>
+
+      <section aria-labelledby="try-this-title" className="quick-start try-this-guide">
+        <div className="quick-start-heading">
+          <h2 id="try-this-title">Try this</h2>
+          <button
+            aria-controls="try-this-steps"
+            aria-expanded={tryThisOpen}
+            className={tryThisOpen ? 'quick-start-dismiss' : 'show-quick-start'}
+            onClick={toggleTryThis}
+            type="button"
+          >
+            {tryThisOpen ? 'Close guide' : 'Show guide'}
+          </button>
+        </div>
+        <ol hidden={!tryThisOpen} id="try-this-steps">
+          {tryThisSteps.map((step) => <li key={step}>{step}</li>)}
+        </ol>
+      </section>
 
       {user && (
         <section aria-label="Quick start" className="quick-start">

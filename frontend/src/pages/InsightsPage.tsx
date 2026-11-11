@@ -6,6 +6,7 @@ import { decisions } from '../data/decisions'
 import { drafts } from '../data/drafts'
 import { findings } from '../data/findings'
 import { useAuth } from '../context/AuthContext'
+import { getInsights, isLiveApi, type InsightsResponse } from '../lib/api'
 import type { DraftStatus, Finding } from '../types'
 import './insights.css'
 
@@ -84,15 +85,51 @@ function formatDraftStatus(status: DraftStatus) {
   return status.replace('_', ' ')
 }
 
+function verdictPresentation(verdict: InsightsResponse['rules'][number]['verdict']) {
+  switch (verdict) {
+    case 'likely_unclear':
+      return { label: 'Often dismissed - wording may be unclear', className: 'verdict-unclear' }
+    case 'often_broken':
+      return { label: 'Often accepted - recurring mistake', className: 'verdict-broken' }
+    case 'ok':
+      return { label: 'OK', className: 'verdict-ok' }
+    case 'not_enough_data':
+      return { label: 'Not enough data yet', className: 'verdict-insufficient' }
+  }
+}
+
 export function InsightsPage() {
   const { user } = useAuth()
+  const liveApi = isLiveApi()
   const [data, setData] = useState<InsightData | null>(null)
+  const [liveData, setLiveData] = useState<InsightsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let active = true
+
+    if (liveApi) {
+      void getInsights()
+        .then((response) => {
+          if (active) setLiveData(response)
+        })
+        .catch((loadError: unknown) => {
+          if (active) {
+            setLiveData(null)
+            setError(loadError instanceof Error ? loadError.message : 'Insights could not be loaded. Please try again.')
+          }
+        })
+        .finally(() => {
+          if (active) setLoading(false)
+        })
+
+      return () => {
+        active = false
+      }
+    }
+
     const timeoutId = window.setTimeout(() => {
       try {
         if (active) {
@@ -113,7 +150,7 @@ export function InsightsPage() {
       active = false
       window.clearTimeout(timeoutId)
     }
-  }, [attempt])
+  }, [attempt, liveApi])
 
   const openFindings = useMemo(
     () => (data?.findings ?? []).filter((finding) => finding.status === 'open'),
@@ -158,17 +195,120 @@ export function InsightsPage() {
     )
   }
 
-  if (loading) return <LoadingState label="Loading governance insights" layout="cards" />
+  if (loading) return <LoadingState label="Loading insights..." layout="cards" />
 
   function retry() {
     setLoading(true)
+    setError(null)
     setAttempt((currentAttempt) => currentAttempt + 1)
   }
 
-  if (error || !data) {
+  if (error || (liveApi ? !liveData : !data)) {
     return (
       <ErrorState
         description={error ?? 'Insights could not be loaded. Please try again.'}
+        onRetry={retry}
+        title="Insights are unavailable"
+      />
+    )
+  }
+
+  if (liveApi && liveData) {
+    if (liveData.total_findings === 0) {
+      return (
+        <section className="insights-page" aria-labelledby="insights-title">
+          <p className="eyebrow">GOVERNANCE REPORTING</p>
+          <h1 id="insights-title">Insights</h1>
+          {liveData.isSample && (
+            <p className="insights-sample-label">Includes sample history</p>
+          )}
+          <p className="insights-empty" role="status">
+            No data yet. Accept or dismiss some findings first.
+          </p>
+        </section>
+      )
+    }
+
+    const repeatedMistakes = liveData.recurring_categories.map(([label, value]) => ({ label, value }))
+    const dismissReasons = liveData.dismissReasons ?? []
+
+    return (
+      <div className="insights-page">
+        <header className="section-heading">
+          <div>
+            <p className="eyebrow">GOVERNANCE REPORTING</p>
+            <h1 id="insights-title">Insights</h1>
+            <p className="section-description">A snapshot of content review and guideline activity.</p>
+            {liveData.isSample && (
+              <p className="insights-sample-label">Includes sample history</p>
+            )}
+          </div>
+        </header>
+
+        <section aria-label="Summary metrics" className="insight-summary insight-summary-live">
+          <article className="summary-card">
+            <h2>Total findings</h2>
+            <p>{liveData.total_findings}</p>
+          </article>
+        </section>
+
+        <div className="insights-chart-grid">
+          <BarChart data={repeatedMistakes} id="repeated-mistakes-chart" title="Most repeated mistakes" />
+        </div>
+
+        <section aria-labelledby="guideline-clarity-title" className="insight-panel guideline-clarity">
+          <h2 id="guideline-clarity-title">Guideline Clarity Score</h2>
+          <div aria-label="Guideline clarity scores table" className="insight-table-wrap" tabIndex={0}>
+            <table className="insight-table clarity-table">
+              <caption className="sr-only">Guideline clarity scores and finding outcomes</caption>
+              <thead>
+                <tr>
+                  <th scope="col">source_id</th>
+                  <th scope="col">flagged</th>
+                  <th scope="col">dismissed</th>
+                  <th scope="col">Clarity score</th>
+                  <th scope="col">Verdict</th>
+                </tr>
+              </thead>
+              <tbody>
+                {liveData.rules.length === 0 ? (
+                  <tr><td colSpan={5}>No guideline data available.</td></tr>
+                ) : liveData.rules.map((rule) => (
+                  <tr key={rule.source_id}>
+                    <th scope="row">{rule.source_id}</th>
+                    <td>{rule.flagged}</td>
+                    <td>{rule.dismissed}</td>
+                    <td>{rule.clarity_score === null ? 'Not enough data' : `${rule.clarity_score}/100`}</td>
+                    <td>
+                      <span className={`insight-verdict ${verdictPresentation(rule.verdict).className}`}>
+                        {verdictPresentation(rule.verdict).label}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {dismissReasons.length > 0 && (
+          <section aria-labelledby="dismiss-reasons-title" className="insight-panel dismiss-reasons">
+            <h2 id="dismiss-reasons-title">Why findings were dismissed</h2>
+            <ul>
+              {dismissReasons.map((reason, index) => <li key={`${reason}-${index}`}>{reason}</li>)}
+            </ul>
+          </section>
+        )}
+
+        <p className="insight-disclaimer">AI findings are suggestions. Humans make the final decisions.</p>
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <ErrorState
+        description="Insights could not be loaded. Please try again."
         onRetry={retry}
         title="Insights are unavailable"
       />
@@ -210,9 +350,11 @@ export function InsightsPage() {
         </div>
       </header>
 
-      <p className="insights-data-source">
-        Sample data only: Insights use bundled mock records and do not reflect live backend activity.
-      </p>
+      {!liveApi && (
+        <p className="insights-data-source">
+          Sample data. Live analytics endpoint ready.
+        </p>
+      )}
 
       <section aria-label="Summary metrics" className="insight-summary">
         <article className="summary-card">
