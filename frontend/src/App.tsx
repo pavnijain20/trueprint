@@ -8,6 +8,7 @@ import { DraftsPage } from './pages/DraftsPage'
 import { InsightsPage } from './pages/InsightsPage'
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage'
 import { LoginPage } from './pages/LoginPage'
+import { NewDraftPage } from './pages/NewDraftPage'
 import { ReliabilityPage } from './pages/ReliabilityPage'
 
 function ProtectedRoute() {
@@ -62,6 +63,11 @@ function RouteTitle() {
       return
     }
 
+    if (pathname === '/drafts/new') {
+      document.title = 'New draft | TruePrint'
+      return
+    }
+
     if (pathname.startsWith('/drafts/')) {
       document.title = 'Draft review | TruePrint'
       return
@@ -97,6 +103,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Navigate to="/drafts" replace />} />
           <Route path="/drafts" element={<DraftsPage />} />
+          <Route path="/drafts/new" element={<NewDraftPage />} />
           <Route path="/drafts/:id" element={<DraftEditorPage />} />
           <Route path="/knowledge-base" element={<KnowledgeBaseRoute />} />
           <Route path="/insights" element={<InsightsPage />} />

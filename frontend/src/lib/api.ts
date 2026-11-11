@@ -747,6 +747,17 @@ export async function submitDraft(draftId: string, by: string, role: string): Pr
   return submittedDraft
 }
 
+export async function createDraft(title: string, content: string, authorName: string): Promise<Draft> {
+  if (!isLiveApi()) {
+    throw new Error('The server is not configured. Set VITE_API_URL to create a draft.')
+  }
+  const value = await request<unknown>('/api/drafts', {
+    method: 'POST',
+    body: JSON.stringify({ title, author: authorName, content }),
+  })
+  return parseDraft(value)
+}
+
 export async function decideDraft(
   draftId: string,
   type: string,

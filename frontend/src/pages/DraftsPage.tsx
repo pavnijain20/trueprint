@@ -134,13 +134,18 @@ export function DraftsPage() {
           <h1>Drafts</h1>
           <p className="section-description">Review content and its brand guidance before publication.</p>
         </div>
-        <span className="draft-total" aria-live="polite">
-          {loading
-            ? 'Loading drafts'
-            : isFiltered
-              ? `${visibleDrafts.length} of ${draftCount} drafts`
-              : `${draftCount} ${draftCount === 1 ? 'draft' : 'drafts'}`}
-        </span>
+        <div className="draft-page-actions">
+          {user?.role === 'author' && (
+            <Link className="primary-button" to="/drafts/new">New draft</Link>
+          )}
+          <span className="draft-total" aria-live="polite">
+            {loading
+              ? 'Loading drafts'
+              : isFiltered
+                ? `${visibleDrafts.length} of ${draftCount} drafts`
+                : `${draftCount} ${draftCount === 1 ? 'draft' : 'drafts'}`}
+          </span>
+        </div>
       </header>
 
       <section aria-labelledby="try-this-title" className="quick-start try-this-guide">
