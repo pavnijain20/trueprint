@@ -77,6 +77,23 @@ export interface SelfCorrectResponse {
   autoApplied: false
 }
 
+export interface KnowledgeFact {
+  id: string
+  kind: 'fact'
+  title: string
+  text: string
+  expires: string | null
+  expired: boolean
+}
+
+export interface KnowledgeGuideline {
+  id: string
+  kind: 'guideline'
+  title: string
+  text: string
+  expires: string | null
+}
+
 function apiBaseUrl() {
   const configuredUrl = import.meta.env?.VITE_API_URL?.trim().replace(/\/+$/, '')
   return configuredUrl || 'https://trueprint-api-iciu.onrender.com'
@@ -576,6 +593,109 @@ export async function getActivityFeed(): Promise<ActivityEvent[]> {
 
 export async function getInsights(): Promise<InsightsResponse> {
   return request<InsightsResponse>('/api/insights')
+}
+
+function parseKnowledgeEntry(value: unknown, kind: 'fact'): KnowledgeFact
+function parseKnowledgeEntry(value: unknown, kind: 'guideline'): KnowledgeGuideline
+function parseKnowledgeEntry(
+  value: unknown,
+  kind: 'fact' | 'guideline',
+): KnowledgeFact | KnowledgeGuideline
+function parseKnowledgeEntry(
+  value: unknown,
+  kind: 'fact' | 'guideline',
+): KnowledgeFact | KnowledgeGuideline {
+  const entry = isRecord(value) ? value : {}
+  const expires = typeof entry.expires === 'string' ? entry.expires : null
+  const common = {
+    id: typeof entry.id === 'string' ? entry.id : '',
+    kind,
+    title: typeof entry.title === 'string' ? entry.title : '',
+    text: typeof entry.text === 'string' ? entry.text : '',
+    expires,
+  }
+  if (kind === 'fact') {
+    return { ...common, kind, expired: entry.expired === true }
+  }
+  return { ...common, kind }
+}
+
+export async function listFacts(): Promise<KnowledgeFact[]> {
+  if (!isLiveApi()) throw new Error('The server is not configured.')
+  const value = await request<unknown>('/api/knowledge/facts')
+  if (!Array.isArray(value)) throw new Error('The server returned an invalid facts list.')
+  return value.map((entry) => parseKnowledgeEntry(entry, 'fact'))
+}
+
+export async function listGuidelines(): Promise<KnowledgeGuideline[]> {
+  if (!isLiveApi()) throw new Error('The server is not configured.')
+  const value = await request<unknown>('/api/knowledge/guidelines')
+  if (!Array.isArray(value)) throw new Error('The server returned an invalid guidelines list.')
+  return value.map((entry) => parseKnowledgeEntry(entry, 'guideline'))
+}
+
+async function createKnowledgeEntry(
+  path: string,
+  kind: 'fact',
+  title: string,
+  text: string,
+  expires?: string,
+): Promise<KnowledgeFact>
+async function createKnowledgeEntry(
+  path: string,
+  kind: 'guideline',
+  title: string,
+  text: string,
+  expires?: string,
+): Promise<KnowledgeGuideline>
+async function createKnowledgeEntry(
+  path: string,
+  kind: 'fact' | 'guideline',
+  title: string,
+  text: string,
+  expires?: string,
+): Promise<KnowledgeFact | KnowledgeGuideline>
+async function createKnowledgeEntry(
+  path: string,
+  kind: 'fact' | 'guideline',
+  title: string,
+  text: string,
+  expires?: string,
+): Promise<KnowledgeFact | KnowledgeGuideline> {
+  if (!isLiveApi()) throw new Error('The server is not configured.')
+  const value = await request<unknown>(path, {
+    method: 'POST',
+    body: JSON.stringify({
+      title,
+      text,
+      ...(expires ? { expires } : {}),
+    }),
+  })
+  return parseKnowledgeEntry(value, kind)
+}
+
+export function createFact(title: string, text: string, expires?: string): Promise<KnowledgeFact> {
+  return createKnowledgeEntry(
+    '/api/knowledge/facts',
+    'fact',
+    title,
+    text,
+    expires,
+  )
+}
+
+export function createGuideline(
+  title: string,
+  text: string,
+  expires?: string,
+): Promise<KnowledgeGuideline> {
+  return createKnowledgeEntry(
+    '/api/knowledge/guidelines',
+    'guideline',
+    title,
+    text,
+    expires,
+  )
 }
 
 function mockReliabilityResponse(): ReliabilityResponse {

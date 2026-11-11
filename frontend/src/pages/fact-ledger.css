@@ -1,0 +1,38 @@
+.fact-ledger-page { width: 100%; }
+.fact-ledger-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid #aebdb1; }
+.fact-ledger-tab { min-height: 42px; padding: 9px 14px; border: 1px solid #87978b; border-bottom: 0; background: #edf2eb; color: #26382c; font-weight: 700; cursor: pointer; }
+.fact-ledger-tab[aria-selected="true"] { background: #174f3b; color: #fff; }
+.fact-ledger-tab:focus-visible, .fact-ledger-table-wrap:focus-visible { outline: 3px solid #a84416; outline-offset: 3px; }
+.fact-ledger-panel, .fact-ledger-form-section { min-width: 0; padding: 18px; border: 1px solid #d7dfd8; background: #fff; }
+.fact-ledger-panel h2, .fact-ledger-form-section h2 { margin: 0 0 12px; color: #17241e; font-size: 1.08rem; }
+.fact-ledger-expiry-note { margin: 0 0 14px; padding: 10px 12px; border-left: 3px solid #526158; background: #f1f4f1; color: #26382c; font-size: 0.88rem; line-height: 1.5; }
+.fact-ledger-empty { margin: 0; padding: 14px; background: #f1f4f1; color: #34443a; line-height: 1.5; }
+.fact-ledger-table-wrap { overflow-x: auto; }
+.fact-ledger-table { width: 100%; border-collapse: collapse; text-align: left; }
+.fact-ledger-table caption { padding: 10px 12px; color: #34443a; font-size: 0.84rem; text-align: left; }
+.fact-ledger-table th, .fact-ledger-table td { min-width: 110px; padding: 10px 12px; border-bottom: 1px solid #d7dfd8; color: #26382c; font-size: 0.86rem; line-height: 1.5; vertical-align: top; }
+.fact-ledger-table thead th { background: #edf2eb; color: #26382c; font-weight: 750; }
+.fact-ledger-table tbody th { font-weight: 650; }
+.fact-ledger-status { display: inline-block; padding: 3px 7px; border: 1px solid #526158; background: #f1f4f1; color: #26382c; font-size: 0.78rem; font-weight: 750; white-space: nowrap; }
+.fact-ledger-status.is-expired { border-color: #8a3d20; background: #f9ece6; color: #672e13; }
+.fact-ledger-form-section { margin-top: 16px; }
+.fact-ledger-form { display: grid; gap: 13px; }
+.fact-ledger-field { display: grid; gap: 6px; }
+.fact-ledger-field label { color: #26382c; font-size: 0.84rem; font-weight: 750; }
+.fact-ledger-field input, .fact-ledger-field textarea { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid #87978b; border-radius: 2px; background: #fff; color: #17241e; font: inherit; }
+.fact-ledger-field textarea { resize: vertical; line-height: 1.5; }
+.fact-ledger-field input:focus-visible, .fact-ledger-field textarea:focus-visible { outline: 3px solid #a84416; outline-offset: 2px; }
+.fact-ledger-form button { justify-self: start; }
+.fact-ledger-form button:disabled { border-color: #69766d; background: #e4e9e4; color: #34443a; cursor: not-allowed; }
+.fact-ledger-save-error { margin: 0; padding: 10px 12px; border-left: 3px solid #8a3d20; background: #f9ece6; color: #672e13; line-height: 1.5; }
+.fact-ledger-state { margin: 0; padding: 18px; border: 1px solid #d7dfd8; background: #fff; color: #34443a; line-height: 1.5; }
+.fact-ledger-state p { margin: 0; }
+.fact-ledger-state[aria-busy="true"] { border: 0; background: transparent; }
+.fact-ledger-error { border-left: 4px solid #8a3d20; }
+.fact-ledger-error h1 { margin: 0 0 8px; color: #17241e; font-family: Georgia, "Times New Roman", serif; font-size: 1.8rem; font-weight: 500; }
+.fact-ledger-error button { margin-top: 12px; }
+
+@media (max-width: 600px) {
+  .fact-ledger-panel, .fact-ledger-form-section { padding: 14px; }
+  .fact-ledger-table th, .fact-ledger-table td { padding: 8px; }
+}

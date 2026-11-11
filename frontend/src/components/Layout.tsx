@@ -10,6 +10,7 @@ const navigationItems: {
 }[] = [
   { label: 'Drafts', to: '/drafts', roles: ['author', 'reviewer', 'approver', 'admin'] },
   { label: 'Knowledge Base', to: '/knowledge-base', roles: ['reviewer', 'approver', 'admin'] },
+  { label: 'Fact Ledger', to: '/fact-ledger', roles: ['reviewer', 'approver', 'admin'] },
   { label: 'Insights', to: '/insights', roles: ['approver', 'admin'] },
   { label: 'Reliability', to: '/reliability', roles: ['author', 'reviewer', 'approver', 'admin'] },
 ]

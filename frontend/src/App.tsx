@@ -5,6 +5,7 @@ import { EmptyState } from './components/States'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { DraftEditorPage } from './pages/DraftEditorPage'
 import { DraftsPage } from './pages/DraftsPage'
+import { FactLedgerPage } from './pages/FactLedgerPage'
 import { InsightsPage } from './pages/InsightsPage'
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage'
 import { LoginPage } from './pages/LoginPage'
@@ -72,6 +73,11 @@ function RouteTitle() {
       return
     }
 
+    if (pathname === '/fact-ledger') {
+      document.title = 'Fact Ledger | TruePrint'
+      return
+    }
+
     if (pathname === '/insights') {
       document.title = 'Insights | TruePrint'
       return
@@ -99,6 +105,7 @@ export default function App() {
           <Route path="/drafts" element={<DraftsPage />} />
           <Route path="/drafts/:id" element={<DraftEditorPage />} />
           <Route path="/knowledge-base" element={<KnowledgeBaseRoute />} />
+          <Route path="/fact-ledger" element={<FactLedgerPage />} />
           <Route path="/insights" element={<InsightsPage />} />
           <Route path="/reliability" element={<ReliabilityPage />} />
         </Route>
