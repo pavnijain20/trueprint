@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { FormEvent as ReactFormEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { CommentsPanel } from '../components/CommentsPanel'
+import { AIDisclosure } from '../components/AIDisclosure'
 import { DecisionBar } from '../components/DecisionBar'
 import { DiffView } from '../components/DiffView'
 import { FindingsPanel } from '../components/FindingsPanel'
@@ -959,6 +960,7 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
               </button>
             )}
           </div>
+          <AIDisclosure />
           {canEditDraft && draftText !== draft.content && (
             <p className="self-correct-save-hint">Save your edits before requesting a suggestion.</p>
           )}
