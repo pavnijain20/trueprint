@@ -3,7 +3,7 @@ from datetime import date
 from app.llm import call_llm
 from app.retrieval import search, list_chunks, get_chunk, get_expiry
 from app.validator import validate_findings
-from app.expiry import flag_outdated
+from app.expiry import flag_outdated, find_expired_fact_use
 from app.risk import risk_score
 from app.rules import rule_check
 from concurrent.futures import ThreadPoolExecutor
@@ -81,8 +81,7 @@ def _run_agent(system, prompt, draft):
 
 
 def review_text(draft: str) -> dict:
-    rule_findings = rule_check(draft, get_chunk)
-
+    rule_findings += find_expired_fact_use(draft, list_chunks("fact"))
     with ThreadPoolExecutor(max_workers=2) as pool:
         fact_job = pool.submit(_run_agent, SYSTEM, build_prompt(draft), draft)
         voice_job = pool.submit(_run_agent, SYSTEM_VOICE, build_voice_prompt(draft), draft)
