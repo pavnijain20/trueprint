@@ -377,3 +377,10 @@ kbd { padding: 2px 5px; border: 1px solid #aebdb1; border-radius: 2px; backgroun
 @media (prefers-reduced-motion: reduce) {
   .draft-row { transition: none; }
 }
+.risk-breakdown { border: 1px solid #aebdb1; background: #f1f5f0; padding: 12px; margin: 12px 0; color: #1f2d24; }
+.risk-breakdown h2 { margin: 0 0 4px; font-size: 1rem; text-transform: capitalize; }
+.risk-breakdown h2 span { font-weight: 500; }
+.risk-formula { margin: 0 0 8px; font-size: 0.82rem; }
+.risk-specialist { margin: 0 0 8px; padding: 8px; border-left: 4px solid #8a5a00; background: #fff4d6; color: #4a3000; font-weight: 650; }
+.risk-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.risk-table th, .risk-table td { text-align: left; padding: 4px 6px; border-top: 1px solid #c8d4ca; text-transform: capitalize; }
