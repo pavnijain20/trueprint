@@ -366,6 +366,8 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
   const canEditDraft = user?.role === 'author'
     && (draft.status === 'draft' || draft.status === 'changes_requested')
   const canRestoreDraft = user?.role === 'author' && canEditDraft && workflowStatusConfirmed
+  const selfCorrectEnabled = import.meta.env.VITE_ENABLE_SELF_CORRECT === 'true'
+    || import.meta.env.VITE_MOCK_SELF_CORRECT === 'true'
   const hasOpenHighFinding = draftFindings.some(
     (finding) => finding.severity === 'high' && finding.status === 'open',
   )
@@ -943,7 +945,7 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
             >
               {reviewing ? 'Reviewing...' : 'Run AI review'}
             </button>
-            {canEditDraft && workflowStatusConfirmed && (
+            {selfCorrectEnabled && canEditDraft && workflowStatusConfirmed && (
               <button
                 aria-busy={selfCorrectBusy}
                 className="secondary-button"
@@ -959,10 +961,10 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
               </button>
             )}
           </div>
-          {canEditDraft && draftText !== draft.content && (
+          {selfCorrectEnabled && canEditDraft && draftText !== draft.content && (
             <p className="self-correct-save-hint">Save your edits before requesting a suggestion.</p>
           )}
-          {selfCorrectOpen && canEditDraft && workflowStatusConfirmed && (
+          {selfCorrectEnabled && selfCorrectOpen && canEditDraft && workflowStatusConfirmed && (
             <SelfCorrectPanel
               draftId={draft.id}
               onApplied={applySuggestedContent}
