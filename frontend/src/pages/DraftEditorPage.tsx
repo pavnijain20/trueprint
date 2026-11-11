@@ -4,6 +4,7 @@ import type { FormEvent as ReactFormEvent, KeyboardEvent as ReactKeyboardEvent }
 import { CommentsPanel } from '../components/CommentsPanel'
 import { DecisionBar } from '../components/DecisionBar'
 import { DiffView } from '../components/DiffView'
+import { ExportApproved } from '../components/ExportApproved'
 import { FindingsPanel } from '../components/FindingsPanel'
 import { SelfCorrectPanel } from '../components/SelfCorrectPanel'
 import { EmptyState, ErrorState, LoadingState } from '../components/States'
@@ -821,6 +822,7 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
           </div>
           <span className={`status-badge status-${draft.status}`}>{draft.status.replace('_', ' ')}</span>
         </div>
+        <ExportApproved decisions={detail.decisions} draft={draft} />
       </header>
 
       <div className="editor-columns">
