@@ -782,3 +782,18 @@ def test_decision_works_even_if_not_submitted_yet(client):
     assert r2.status_code == 200
     data = client.get(f"/api/drafts/{did}").json()
     assert data["draft"]["status"] == "approved" and len(data["activity"]) >= 3
+
+def test_self_correct_suggests_but_never_changes_the_draft(client, monkeypatch):
+    fake = {"original": "hello", "first_review": {}, "status": "resolved", "suggested_draft": "better",
+            "auto_applied": False,
+            "attempts": [{"attempt": 1, "revised": "better", "missing_proof": "need a fact", "remaining": 0, "risk": {}}]}
+    monkeypatch.setattr(wf, "run_self_correct", lambda text: fake)
+    did = new_draft(client)
+    out = client.post(f"/api/drafts/{did}/self-correct").json()
+    assert out["status"] == "resolved" and out["suggestedDraft"] == "better" and out["autoApplied"] is False
+    assert out["attempts"][0]["missingProof"] == "need a fact"
+    assert client.get(f"/api/drafts/{did}").json()["draft"]["content"] == "hello"
+
+
+def test_self_correct_unknown_draft_is_404(client):
+    assert client.post("/api/drafts/nope/self-correct").status_code == 404

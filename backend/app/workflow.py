@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.agents import review_text
+from app.self_correct import self_correct as run_self_correct
 from app.insights import compute_insights
 from app.retrieval import get_conn as kb_conn
 
@@ -449,3 +450,23 @@ def get_insights():
     events = [{"source_id": r["source_id"], "category": r["category"], "team": "marketing",
                "action": r["status"]} for r in rows]
     return compute_insights(events)
+
+@router.post("/drafts/{draft_id}/self-correct")
+def self_correct_draft(draft_id: str):
+    with conn() as c:
+        d = need_draft(c, draft_id)
+        if d["status"] == "approved":
+            raise HTTPException(409, "Approved drafts are locked")
+        content = d["content"]
+    result = run_self_correct(content)
+    with conn() as c:
+        audit(c, "system", "system", "self_correct_run", draft_id, f'status={result["status"]}')
+    return {
+        "status": result["status"],
+        "original": result["original"],
+        "suggestedDraft": result["suggested_draft"],
+        "attempts": [{"attempt": a["attempt"], "revised": a["revised"],
+                      "missingProof": a.get("missing_proof", ""), "remaining": a["remaining"]}
+                     for a in result["attempts"]],
+        "autoApplied": False,
+    }
