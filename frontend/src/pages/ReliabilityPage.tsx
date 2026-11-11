@@ -4,18 +4,19 @@ import type { ReliabilityResponse } from '../lib/api'
 import './reliability.css'
 
 function readableValue(value: unknown): string {
-  if (value === null || value === undefined) return 'Not provided'
+  if (value === null || value === undefined) return '-'
   if (typeof value === 'string') return value
   if (typeof value === 'number' || typeof value === 'boolean') return String(value)
   try {
     const serialized = JSON.stringify(value, null, 2)
-    return serialized ?? 'Not provided'
+    return serialized ?? '-'
   } catch {
-    return 'Value could not be displayed'
+    return '-'
   }
 }
 
-function percentage(value: number): string {
+function percentage(value: number | '-'): string {
+  if (value === '-') return value
   const percentValue = value <= 1 ? value * 100 : value
   return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(percentValue)}%`
 }
