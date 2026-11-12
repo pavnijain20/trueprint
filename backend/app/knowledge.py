@@ -9,7 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.retrieval import add_chunk, list_chunks
+from app.retrieval import add_chunk, list_chunks, init_db
 
 router = APIRouter(prefix="/api/knowledge", tags=["Knowledge"])
 
@@ -32,9 +32,9 @@ def _is_expired(expires: str | None) -> bool:
             detail="expires must be a valid ISO date (YYYY-MM-DD)",
         ) from exc
 
-
 @router.get("/facts")
 def get_facts():
+    init_db()
     facts = list_chunks("fact")
     return [
         {
@@ -48,13 +48,15 @@ def get_facts():
 
 @router.get("/guidelines")
 def get_guidelines():
+    init_db()
     guidelines = list_chunks("guideline")
     return [{**item, "kind": "guideline"} for item in guidelines]
 
 
 @router.post("/facts", status_code=201)
 def create_fact(body: KnowledgeItemIn):
-    _is_expired(body.expires)  # Validate the optional date before saving.
+    init_db()
+    _is_expired(body.expires)
     item_id = f"fact_{uuid4().hex[:8]}"
     add_chunk(item_id, "fact", body.title.strip(), body.text.strip(), body.expires)
     return {
@@ -69,7 +71,8 @@ def create_fact(body: KnowledgeItemIn):
 
 @router.post("/guidelines", status_code=201)
 def create_guideline(body: KnowledgeItemIn):
-    _is_expired(body.expires)  # Same date validation; guidelines may also expire.
+    init_db()
+    _is_expired(body.expires)
     item_id = f"guideline_{uuid4().hex[:8]}"
     add_chunk(item_id, "guideline", body.title.strip(), body.text.strip(), body.expires)
     return {
