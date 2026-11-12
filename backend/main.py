@@ -19,10 +19,14 @@ async def lifespan(app):
     init_db()
     yield
 
-app = FastAPI(title="Trueprint API", version="1.1.0",
-              app.include_router(knowledge_router)
-              description="Brand governance backend for the TRUEPRINT Round 2 demo",
-              lifespan=lifespan)
+app = FastAPI(
+    title="Trueprint API",
+    version="1.1.0",
+    description="Brand governance backend for the TRUEPRINT Round 2 demo",
+    lifespan=lifespan
+)
+
+app.include_router(knowledge_router)
 
 _cors_origins = [x.strip() for x in os.getenv(
     "CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
