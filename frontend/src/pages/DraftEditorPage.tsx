@@ -6,6 +6,7 @@ import { AIDisclosure } from '../components/AIDisclosure'
 import { DecisionBar } from '../components/DecisionBar'
 import { DiffView } from '../components/DiffView'
 import { FindingsPanel } from '../components/FindingsPanel'
+import { RiskBreakdown } from '../components/RiskBreakdown'
 import { SelfCorrectPanel } from '../components/SelfCorrectPanel'
 import { EmptyState, ErrorState, LoadingState } from '../components/States'
 import { useAuth } from '../context/AuthContext'
@@ -21,7 +22,7 @@ import {
   updateDraftContent,
   updateFinding,
 } from '../lib/api'
-import type { ActivityEvent, DraftDetail, DraftVersion, Finding, FindingStatus } from '../types'
+import type { ActivityEvent, DraftDetail, DraftVersion, Finding, FindingStatus, ReviewRisk } from '../types'
 import './drafts.css'
 
 interface VersionComparisonOption {
@@ -341,6 +342,7 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
   const [selfCorrectBusy, setSelfCorrectBusy] = useState(false)
   const [suggestionNotice, setSuggestionNotice] = useState<string | null>(null)
   const [reviewError, setReviewError] = useState<string | null>(null)
+  const [reviewRisk, setReviewRisk] = useState<ReviewRisk | null>(null)
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [mutationSuccess, setMutationSuccess] = useState<string | null>(null)
   const [mutating, setMutating] = useState(false)
@@ -540,7 +542,8 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
     setAnnouncement('Running AI review')
     try {
       await saveCurrentContent()
-      await reviewDraft(draft.id)
+      const reviewResult = await reviewDraft(draft.id)
+      setReviewRisk(reviewResult.risk)
       await refreshDetail()
       await refreshActivity()
       setSelectedFindingId(null)
@@ -991,6 +994,7 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
             />
           )}
           {mutationError && <p className="review-notice" role="alert">{mutationError}</p>}
+          {reviewRisk && <RiskBreakdown risk={reviewRisk} />}
           <details className="keyboard-shortcuts">
             <summary>Keyboard shortcuts</summary>
             <ul>
