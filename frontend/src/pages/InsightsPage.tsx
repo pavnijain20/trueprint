@@ -98,6 +98,21 @@ function verdictPresentation(verdict: InsightsResponse['rules'][number]['verdict
   }
 }
 
+function eventCount(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (Array.isArray(value)) return value.length
+  return null
+}
+
+function sampleLabel(data: InsightsResponse): string {
+  const real = eventCount(data.realEvents)
+  const sample = eventCount(data.sampleEvents)
+  const counts = real !== null && sample !== null
+    ? ` (${real} real ${real === 1 ? 'event' : 'events'}, ${sample} sample ${sample === 1 ? 'event' : 'events'})`
+    : ''
+  return `Includes sample history${counts}. Sample history is shown for context and is not live user activity.`
+}
+
 export function InsightsPage() {
   const { user } = useAuth()
   const liveApi = isLiveApi()
@@ -220,7 +235,7 @@ export function InsightsPage() {
           <p className="eyebrow">GOVERNANCE REPORTING</p>
           <h1 id="insights-title">Insights</h1>
           {liveData.isSample && (
-            <p className="insights-sample-label">Includes sample history</p>
+            <p className="insights-sample-label">{sampleLabel(liveData)}</p>
           )}
           <p className="insights-empty" role="status">
             No data yet. Accept or dismiss some findings first.
@@ -230,7 +245,12 @@ export function InsightsPage() {
     }
 
     const repeatedMistakes = liveData.recurring_categories.map(([label, value]) => ({ label, value }))
-    const dismissReasons = liveData.dismissReasons ?? []
+    const dismissReasons = (liveData.dismissReasons ?? []).map((item) => {
+      if (typeof item === 'string') return { text: item, sample: false }
+      const reason = typeof item?.reason === 'string' ? item.reason : ''
+      const source = typeof item?.sourceId === 'string' ? item.sourceId : ''
+      return { text: source ? `${source}: ${reason}` : reason, sample: item?.sample === true }
+    }).filter((item) => item.text.trim() !== '')
 
     return (
       <div className="insights-page">
@@ -240,7 +260,7 @@ export function InsightsPage() {
             <h1 id="insights-title">Insights</h1>
             <p className="section-description">A snapshot of content review and guideline activity.</p>
             {liveData.isSample && (
-              <p className="insights-sample-label">Includes sample history</p>
+              <p className="insights-sample-label">{sampleLabel(liveData)}</p>
             )}
           </div>
         </header>
@@ -295,7 +315,11 @@ export function InsightsPage() {
           <section aria-labelledby="dismiss-reasons-title" className="insight-panel dismiss-reasons">
             <h2 id="dismiss-reasons-title">Why findings were dismissed</h2>
             <ul>
-              {dismissReasons.map((reason, index) => <li key={`${reason}-${index}`}>{reason}</li>)}
+              {dismissReasons.map((reason, index) => (
+                <li key={`${reason.text}-${index}`}>
+                  {reason.text}{reason.sample ? ' (sample)' : ''}
+                </li>
+              ))}
             </ul>
           </section>
         )}

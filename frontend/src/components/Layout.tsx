@@ -19,6 +19,8 @@ export function Layout() {
   const navigate = useNavigate()
 
   if (!user) return null
+  const reliabilityEnabled = import.meta.env.VITE_ENABLE_RELIABILITY === 'true'
+    || import.meta.env.VITE_MOCK_RELIABILITY === 'true'
 
   function handleLogout() {
     logout()
@@ -41,7 +43,8 @@ export function Layout() {
           <p className="sidebar-label">Workspace</p>
           <nav aria-label="Main navigation">
             {navigationItems
-              .filter((item) => item.roles.includes(user.role))
+              .filter((item) => item.roles.includes(user.role)
+                && (item.to !== '/reliability' || reliabilityEnabled))
               .map((item) => (
                 <NavLink
                   className="nav-link"

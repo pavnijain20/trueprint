@@ -4,6 +4,7 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 import threading
+_DATE = re.compile(r"TODAY: \d{4}-\d{2}-\d{2}")
 
 load_dotenv()
 CACHE_FILE = Path(".cache/llm_cache.json")
@@ -48,14 +49,17 @@ def _extract_json(raw: str):
 def call_llm(system: str, user: str, retries: int = 3):
     """Returns parsed JSON dict, or None if every attempt fails.
     Retries with a short wait, then tries the fallback model."""
-    key = hashlib.sha256((system + user).encode()).hexdigest()
-    old_key = hashlib.sha256((MODEL + system + user).encode()).hexdigest()
-    for k in (key, old_key):
+    stable = _DATE.sub("TODAY: DATE", user)
+    key = hashlib.sha256((system + stable).encode()).hexdigest()
+    old_keys = [hashlib.sha256((system + user).encode()).hexdigest(),
+                hashlib.sha256((MODEL + system + user).encode()).hexdigest()]
+    for k in [key] + old_keys:
         if k in _cache:
             return _cache[k]
         if k in _demo:
             return _demo[k]
-            client = _get_client()
+
+    client = _get_client()
     if client is None:
         print("LLM_API_KEY is not set: live AI is unavailable (saved demo responses still work).")
         return None
@@ -63,7 +67,7 @@ def call_llm(system: str, user: str, retries: int = 3):
     for model in models:
         for attempt in range(retries):
             try:
-                resp = _client.models.generate_content(
+                resp = client.models.generate_content(
                     model=model,
                     contents=redact(user),
                     config=types.GenerateContentConfig(

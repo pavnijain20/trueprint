@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.agents import review_text
+from app.self_correct import self_correct as run_self_correct
 from app.insights import compute_insights
 from app.retrieval import get_conn as kb_conn
 
@@ -449,3 +450,71 @@ def get_insights():
     events = [{"source_id": r["source_id"], "category": r["category"], "team": "marketing",
                "action": r["status"]} for r in rows]
     return compute_insights(events)
+
+@router.post("/drafts/{draft_id}/self-correct")
+def self_correct_draft(draft_id: str):
+    with conn() as c:
+        d = need_draft(c, draft_id)
+        if d["status"] == "approved":
+            raise HTTPException(409, "Approved drafts are locked")
+        content = d["content"]
+    result = run_self_correct(content)
+    with conn() as c:
+        audit(c, "system", "system", "self_correct_run", draft_id, f'status={result["status"]}')
+    return {
+        "status": result["status"],
+        "original": result["original"],
+        "suggestedDraft": result["suggested_draft"],
+        "attempts": [{"attempt": a["attempt"], "revised": a["revised"],
+                      "missingProof": a.get("missing_proof", ""), "remaining": a["remaining"]}
+                     for a in result["attempts"]],
+        "autoApplied": False,
+    }
+SAMPLE_INSIGHT_EVENTS = (
+    [{"source_id": "guide_02", "category": "claim", "team": "marketing", "action": "accepted"}] * 5
+    + [{"source_id": "guide_02", "category": "claim", "team": "marketing", "action": "dismissed"}]
+    + [{"source_id": "guide_01", "category": "tone", "team": "marketing", "action": "dismissed"}] * 3
+    + [{"source_id": "guide_01", "category": "tone", "team": "marketing", "action": "accepted"}]
+    + [{"source_id": "guide_03", "category": "terminology", "team": "marketing", "action": "accepted"}] * 3
+    + [{"source_id": "F04", "category": "claim", "team": "marketing", "action": "accepted"}] * 2
+    + [{"source_id": "F04", "category": "claim", "team": "marketing", "action": "dismissed"}]
+)
+SAMPLE_DISMISS_REASONS = [
+    {"sourceId": "guide_01", "reason": "Tone guideline is unclear for a flash-sale post", "sample": True},
+    {"sourceId": "guide_01", "reason": "Exclamation marks are normal in our campaign style", "sample": True},
+    {"sourceId": "guide_02", "reason": "The claim is backed by an approved fact", "sample": True},
+]
+
+
+@router.get("/insights/summary")
+def insights_summary():
+    """Live insights from real accept and dismiss actions; clearly labelled sample history is added only when real data is thin."""
+    with conn() as c:
+        rows = c.execute(
+            "SELECT source_id, category, status, dismiss_reason FROM findings WHERE status != 'open'"
+        ).fetchall()
+    real = [{"source_id": r["source_id"], "category": r["category"], "team": "marketing",
+             "action": r["status"]} for r in rows if r["source_id"]]
+    reasons = [{"sourceId": r["source_id"], "reason": r["dismiss_reason"], "sample": False}
+               for r in rows if r["status"] == "dismissed" and r["dismiss_reason"]]
+    is_sample = len(real) < 6
+    events = real + (SAMPLE_INSIGHT_EVENTS if is_sample else [])
+    out = compute_insights(events)
+    out["isSample"] = is_sample
+    out["realEvents"] = len(real)
+    out["sampleEvents"] = len(SAMPLE_INSIGHT_EVENTS) if is_sample else 0
+    out["dismissReasons"] = reasons + (SAMPLE_DISMISS_REASONS if is_sample else [])
+    return out
+
+
+@router.get("/reliability")
+def reliability():
+    import json as _json
+    report = Path(__file__).resolve().parent.parent / "eval" / "report.json"
+    if not report.exists():
+        raise HTTPException(404, "No evaluation report found. Run harness.py first.")
+    data = _json.loads(report.read_text(encoding="utf-8"))
+    return {"summary": data["summary"],
+            "rows": [{"draft": r["draft"], "expected": r.get("expected", []),
+                      "predicted": r.get("predicted", []), "findings": r.get("findings", 0),
+                      "aiError": r.get("ai_error")} for r in data["rows"]]}
