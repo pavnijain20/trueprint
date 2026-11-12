@@ -365,7 +365,10 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
   const workflowStatusConfirmed = detailUserIdentity === userIdentity
   const canEditDraft = user?.role === 'author'
     && (draft.status === 'draft' || draft.status === 'changes_requested')
-  const canRestoreDraft = user?.role === 'author' && canEditDraft && workflowStatusConfirmed
+  // Restore needs a backend endpoint that is not confirmed as deployed. Keep it off until
+  // VITE_ENABLE_RESTORE is set to "true".
+  const restoreEnabled = (import.meta.env as Record<string, string | undefined>).VITE_ENABLE_RESTORE === 'true'
+  const canRestoreDraft = restoreEnabled && user?.role === 'author' && canEditDraft && workflowStatusConfirmed
   const hasOpenHighFinding = draftFindings.some(
     (finding) => finding.severity === 'high' && finding.status === 'open',
   )
