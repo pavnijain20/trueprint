@@ -58,7 +58,8 @@ def call_llm(system: str, user: str, retries: int = 3):
             return _cache[k]
         if k in _demo:
             return _demo[k]
-            client = _get_client()
+
+    client = _get_client()
     if client is None:
         print("LLM_API_KEY is not set: live AI is unavailable (saved demo responses still work).")
         return None
@@ -66,7 +67,7 @@ def call_llm(system: str, user: str, retries: int = 3):
     for model in models:
         for attempt in range(retries):
             try:
-                resp = _client.models.generate_content(
+                resp = client.models.generate_content(
                     model=model,
                     contents=redact(user),
                     config=types.GenerateContentConfig(
