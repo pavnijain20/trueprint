@@ -365,6 +365,8 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
   const workflowStatusConfirmed = detailUserIdentity === userIdentity
   const canEditDraft = user?.role === 'author'
     && (draft.status === 'draft' || draft.status === 'changes_requested')
+  const selfCorrectEnabled = import.meta.env.VITE_ENABLE_SELF_CORRECT === 'true'
+    || import.meta.env.VITE_MOCK_SELF_CORRECT === 'true'
   // Restore needs a backend endpoint that is not confirmed as deployed. Keep it off until
   // VITE_ENABLE_RESTORE is set to "true".
   const restoreEnabled = (import.meta.env as Record<string, string | undefined>).VITE_ENABLE_RESTORE === 'true'
@@ -946,7 +948,7 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
             >
               {reviewing ? 'Reviewing...' : 'Run AI review'}
             </button>
-            {canEditDraft && workflowStatusConfirmed && (
+            {selfCorrectEnabled && canEditDraft && workflowStatusConfirmed && (
               <button
                 aria-busy={selfCorrectBusy}
                 className="secondary-button"
@@ -962,10 +964,10 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
               </button>
             )}
           </div>
-          {canEditDraft && draftText !== draft.content && (
+          {selfCorrectEnabled && canEditDraft && draftText !== draft.content && (
             <p className="self-correct-save-hint">Save your edits before requesting a suggestion.</p>
           )}
-          {selfCorrectOpen && canEditDraft && workflowStatusConfirmed && (
+          {selfCorrectEnabled && selfCorrectOpen && canEditDraft && workflowStatusConfirmed && (
             <SelfCorrectPanel
               draftId={draft.id}
               onApplied={applySuggestedContent}
