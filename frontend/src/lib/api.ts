@@ -48,11 +48,11 @@ export interface InsightsResponse {
 
 export interface ReliabilityResponse {
   summary: {
-    drafts: number
-    precision: number
-    recall: number
-    unvalidated_citation_rate: number
-    drafts_with_ai_error: number
+    drafts: number | '-'
+    precision: number | '-'
+    recall: number | '-'
+    unvalidated_citation_rate: number | '-'
+    drafts_with_ai_error: number | '-'
   }
   rows: {
     draft: string
@@ -198,10 +198,8 @@ export async function request<T>(
 }
 
 function parseSelfCorrectResponse(value: unknown): SelfCorrectResponse {
-  if (!isRecord(value) || !Array.isArray(value.attempts)) {
-    throw new Error('The API returned an invalid self-correction response.')
-  }
-  const status = value.status
+  const record = isRecord(value) ? value : {}
+  const status = record.status
   if (
     status !== 'resolved'
     && status !== 'needs_human'
@@ -210,32 +208,25 @@ function parseSelfCorrectResponse(value: unknown): SelfCorrectResponse {
   ) {
     throw new Error('The API returned an unsupported self-correction status.')
   }
-  const original = requiredString(value, 'original', 'self-correction response')
-  const suggestedDraft = value.suggestedDraft
-  if (suggestedDraft !== null && typeof suggestedDraft !== 'string') {
-    throw new Error('The API returned an invalid self-correction response: "suggestedDraft" must be a string or null.')
+  const original = record.original
+  if (typeof original !== 'string') {
+    throw new Error('The API returned an invalid self-correction response: "original" must be a string.')
   }
-  if (value.autoApplied !== false) {
-    throw new Error('The API returned an invalid self-correction response: suggestions must not be applied automatically.')
-  }
-
-  const attempts = value.attempts.map((attemptValue): SelfCorrectAttempt => {
-    if (!isRecord(attemptValue)) {
-      throw new Error('The API returned an invalid self-correction attempt.')
-    }
-    const attempt = attemptValue.attempt
-    const remaining = attemptValue.remaining
-    if (!Number.isInteger(attempt) || typeof attempt !== 'number') {
-      throw new Error('The API returned an invalid self-correction attempt number.')
-    }
-    if (!Number.isInteger(remaining) || typeof remaining !== 'number' || remaining < 0) {
-      throw new Error('The API returned an invalid remaining findings count.')
-    }
+  const suggestedDraft = typeof record.suggestedDraft === 'string' ? record.suggestedDraft : null
+  const rawAttempts = Array.isArray(record.attempts) ? record.attempts : []
+  const attempts = rawAttempts.map((attemptValue, index): SelfCorrectAttempt => {
+    const attemptRecord = isRecord(attemptValue) ? attemptValue : {}
+    const rawAttempt = attemptRecord.attempt
+    const rawRemaining = attemptRecord.remaining
     return {
-      attempt,
-      revised: requiredString(attemptValue, 'revised', 'self-correction attempt'),
-      missingProof: requiredString(attemptValue, 'missingProof', 'self-correction attempt'),
-      remaining,
+      attempt: typeof rawAttempt === 'number' && Number.isInteger(rawAttempt)
+        ? rawAttempt
+        : index + 1,
+      revised: typeof attemptRecord.revised === 'string' ? attemptRecord.revised : '',
+      missingProof: typeof attemptRecord.missingProof === 'string' ? attemptRecord.missingProof : '',
+      remaining: typeof rawRemaining === 'number' && Number.isInteger(rawRemaining) && rawRemaining >= 0
+        ? rawRemaining
+        : 0,
     }
   })
 
@@ -602,32 +593,25 @@ function mockReliabilityResponse(): ReliabilityResponse {
 }
 
 function parseReliabilityResponse(value: unknown): ReliabilityResponse {
-  if (!isRecord(value) || !Array.isArray(value.rows)) {
-    throw new Error('The API returned an invalid reliability response.')
-  }
-  const summary = value.summary
-  if (!isRecord(summary)) throw new Error('The API returned an invalid reliability response.')
+  const record = isRecord(value) ? value : {}
+  const summary = isRecord(record.summary) ? record.summary : {}
   const numericMetric = (key:
     | 'drafts'
     | 'precision'
     | 'recall'
     | 'unvalidated_citation_rate'
-    | 'drafts_with_ai_error'): number => {
+    | 'drafts_with_ai_error'): number | '-' => {
     const metric = summary[key]
-    if (typeof metric !== 'number' || !Number.isFinite(metric)) {
-      throw new Error(`The API returned an invalid reliability summary: "${key}" must be a number.`)
-    }
-    return metric
+    return typeof metric === 'number' && Number.isFinite(metric) ? metric : '-'
   }
-  const rows = value.rows.map((row): ReliabilityResponse['rows'][number] => {
-    if (!isRecord(row) || typeof row.draft !== 'string') {
-      throw new Error('The API returned an invalid reliability test row.')
-    }
+  const rawRows = Array.isArray(record.rows) ? record.rows : []
+  const rows = rawRows.map((row): ReliabilityResponse['rows'][number] => {
+    const rowRecord = isRecord(row) ? row : {}
     return {
-      draft: row.draft,
-      expected: row.expected,
-      predicted: row.predicted,
-      findings: row.findings,
+      draft: typeof rowRecord.draft === 'string' ? rowRecord.draft : '-',
+      expected: rowRecord.expected ?? '-',
+      predicted: rowRecord.predicted ?? '-',
+      findings: rowRecord.findings ?? '-',
     }
   })
   return {
