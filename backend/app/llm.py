@@ -4,6 +4,7 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 import threading
+_DATE = re.compile(r"TODAY: \d{4}-\d{2}-\d{2}")
 
 load_dotenv()
 CACHE_FILE = Path(".cache/llm_cache.json")
@@ -48,9 +49,11 @@ def _extract_json(raw: str):
 def call_llm(system: str, user: str, retries: int = 3):
     """Returns parsed JSON dict, or None if every attempt fails.
     Retries with a short wait, then tries the fallback model."""
-    key = hashlib.sha256((system + user).encode()).hexdigest()
-    old_key = hashlib.sha256((MODEL + system + user).encode()).hexdigest()
-    for k in (key, old_key):
+    stable = _DATE.sub("TODAY: DATE", user)
+    key = hashlib.sha256((system + stable).encode()).hexdigest()
+    old_keys = [hashlib.sha256((system + user).encode()).hexdigest(),
+                hashlib.sha256((MODEL + system + user).encode()).hexdigest()]
+    for k in [key] + old_keys:
         if k in _cache:
             return _cache[k]
         if k in _demo:

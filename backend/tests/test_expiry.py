@@ -17,3 +17,15 @@ def test_unrelated_draft_is_not_flagged():
 
 def test_a_fact_that_has_not_expired_is_ignored():
     assert find_expired_fact_use("Enjoy 20% off GlowLeaf Serum in our Winter Sale!", FACTS, today="2026-10-01") == []
+
+
+def test_review_text_runs_and_includes_the_expiry_finding_without_the_ai(monkeypatch):
+    import app.agents as ag
+    monkeypatch.setattr(ag, "call_llm", lambda s, u: None)
+    monkeypatch.setattr(ag, "build_prompt", lambda d: "x")
+    monkeypatch.setattr(ag, "build_voice_prompt", lambda d: "x")
+    monkeypatch.setattr(ag, "get_chunk", lambda i: "chunk text")
+    monkeypatch.setattr(ag, "list_chunks", lambda kind: [
+        {"id": "F20", "text": "Winter Sale: 20% off GlowLeaf Serum until 2026-10-31.", "expires": "2026-10-31"}])
+    out = ag.review_text("Enjoy 20% off GlowLeaf Serum in our Winter Sale!")
+    assert any(f["source"]["id"] == "F20" for f in out["findings"])
