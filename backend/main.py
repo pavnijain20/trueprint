@@ -6,6 +6,7 @@ from typing import Optional, Literal
 from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from app.knowledge import router as knowledge_router
 
 APP_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.getenv("DATABASE_PATH", str(APP_DIR.parent / "data" / "trueprint.db")))
@@ -19,6 +20,7 @@ async def lifespan(app):
     yield
 
 app = FastAPI(title="Trueprint API", version="1.1.0",
+              app.include_router(knowledge_router)
               description="Brand governance backend for the TRUEPRINT Round 2 demo",
               lifespan=lifespan)
 
