@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { FormEvent as ReactFormEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { CommentsPanel } from '../components/CommentsPanel'
+import { AIDisclosure } from '../components/AIDisclosure'
 import { DecisionBar } from '../components/DecisionBar'
 import { DiffView } from '../components/DiffView'
 import { ExportApproved } from '../components/ExportApproved'
 import { FindingsPanel } from '../components/FindingsPanel'
+import { RiskBreakdown } from '../components/RiskBreakdown'
 import { SelfCorrectPanel } from '../components/SelfCorrectPanel'
 import { EmptyState, ErrorState, LoadingState } from '../components/States'
 import { useAuth } from '../context/AuthContext'
@@ -21,7 +23,7 @@ import {
   updateDraftContent,
   updateFinding,
 } from '../lib/api'
-import type { ActivityEvent, DraftDetail, DraftVersion, Finding, FindingStatus } from '../types'
+import type { ActivityEvent, DraftDetail, DraftVersion, Finding, FindingStatus, ReviewRisk } from '../types'
 import './drafts.css'
 
 interface VersionComparisonOption {
@@ -341,6 +343,7 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
   const [selfCorrectBusy, setSelfCorrectBusy] = useState(false)
   const [suggestionNotice, setSuggestionNotice] = useState<string | null>(null)
   const [reviewError, setReviewError] = useState<string | null>(null)
+  const [reviewRisk, setReviewRisk] = useState<ReviewRisk | null>(null)
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [mutationSuccess, setMutationSuccess] = useState<string | null>(null)
   const [mutating, setMutating] = useState(false)
@@ -366,7 +369,12 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
   const workflowStatusConfirmed = detailUserIdentity === userIdentity
   const canEditDraft = user?.role === 'author'
     && (draft.status === 'draft' || draft.status === 'changes_requested')
-  const canRestoreDraft = user?.role === 'author' && canEditDraft && workflowStatusConfirmed
+  const selfCorrectEnabled = import.meta.env.VITE_ENABLE_SELF_CORRECT === 'true'
+    || import.meta.env.VITE_MOCK_SELF_CORRECT === 'true'
+  // Restore needs a backend endpoint that is not confirmed as deployed. Keep it off until
+  // VITE_ENABLE_RESTORE is set to "true".
+  const restoreEnabled = (import.meta.env as Record<string, string | undefined>).VITE_ENABLE_RESTORE === 'true'
+  const canRestoreDraft = restoreEnabled && user?.role === 'author' && canEditDraft && workflowStatusConfirmed
   const hasOpenHighFinding = draftFindings.some(
     (finding) => finding.severity === 'high' && finding.status === 'open',
   )
@@ -535,7 +543,8 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
     setAnnouncement('Running AI review')
     try {
       await saveCurrentContent()
-      await reviewDraft(draft.id)
+      const reviewResult = await reviewDraft(draft.id)
+      setReviewRisk(reviewResult.risk)
       await refreshDetail()
       await refreshActivity()
       setSelectedFindingId(null)
@@ -945,7 +954,7 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
             >
               {reviewing ? 'Reviewing...' : 'Run AI review'}
             </button>
-            {canEditDraft && workflowStatusConfirmed && (
+            {selfCorrectEnabled && canEditDraft && workflowStatusConfirmed && (
               <button
                 aria-busy={selfCorrectBusy}
                 className="secondary-button"
@@ -961,10 +970,11 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
               </button>
             )}
           </div>
-          {canEditDraft && draftText !== draft.content && (
+                <AIDisclosure />
+                {selfCorrectEnabled && canEditDraft && draftText !== draft.content && (
             <p className="self-correct-save-hint">Save your edits before requesting a suggestion.</p>
           )}
-          {selfCorrectOpen && canEditDraft && workflowStatusConfirmed && (
+          {selfCorrectEnabled && selfCorrectOpen && canEditDraft && workflowStatusConfirmed && (
             <SelfCorrectPanel
               draftId={draft.id}
               onApplied={applySuggestedContent}
@@ -986,6 +996,7 @@ function DraftEditor({ initialDetail }: { initialDetail: DraftDetail }) {
             />
           )}
           {mutationError && <p className="review-notice" role="alert">{mutationError}</p>}
+          {reviewRisk && <RiskBreakdown risk={reviewRisk} />}
           <details className="keyboard-shortcuts">
             <summary>Keyboard shortcuts</summary>
             <ul>

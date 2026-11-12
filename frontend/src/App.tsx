@@ -24,6 +24,12 @@ function KnowledgeBaseRoute() {
   return <KnowledgeBasePage />
 }
 
+function ReliabilityRoute() {
+  const enabled = import.meta.env.VITE_ENABLE_RELIABILITY === 'true'
+    || import.meta.env.VITE_MOCK_RELIABILITY === 'true'
+  return enabled ? <ReliabilityPage /> : <Navigate to="/drafts" replace />
+}
+
 function NotFoundPage() {
   return (
     <>
@@ -100,7 +106,7 @@ export default function App() {
           <Route path="/drafts/:id" element={<DraftEditorPage />} />
           <Route path="/knowledge-base" element={<KnowledgeBaseRoute />} />
           <Route path="/insights" element={<InsightsPage />} />
-          <Route path="/reliability" element={<ReliabilityPage />} />
+          <Route path="/reliability" element={<ReliabilityRoute />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

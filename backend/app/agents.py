@@ -81,6 +81,7 @@ def _run_agent(system, prompt, draft):
 
 
 def review_text(draft: str) -> dict:
+    rule_findings = rule_check(draft, get_chunk)
     rule_findings += find_expired_fact_use(draft, list_chunks("fact"))
     with ThreadPoolExecutor(max_workers=2) as pool:
         fact_job = pool.submit(_run_agent, SYSTEM, build_prompt(draft), draft)
