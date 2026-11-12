@@ -29,3 +29,32 @@ def test_review_text_runs_and_includes_the_expiry_finding_without_the_ai(monkeyp
         {"id": "F20", "text": "Winter Sale: 20% off GlowLeaf Serum until 2026-10-31.", "expires": "2026-10-31"}])
     out = ag.review_text("Enjoy 20% off GlowLeaf Serum in our Winter Sale!")
     assert any(f["source"]["id"] == "F20" for f in out["findings"])
+
+
+def test_call_llm_uses_its_client_and_returns_json(monkeypatch, tmp_path):
+    import app.llm as llm
+
+    class Resp:
+        text = '{"ok": true}'
+
+    class Models:
+        def generate_content(self, **kwargs):
+            return Resp()
+
+    class Client:
+        models = Models()
+
+    monkeypatch.setattr(llm, "_get_client", lambda: Client())
+    monkeypatch.setattr(llm, "CACHE_FILE", tmp_path / "cache.json")
+    monkeypatch.setattr(llm, "_cache", {})
+    monkeypatch.setattr(llm, "_demo", {})
+    assert llm.call_llm("sys", "unique text for this test 123") == {"ok": True}
+
+
+def test_call_llm_without_a_client_returns_none_instead_of_crashing(monkeypatch, tmp_path):
+    import app.llm as llm
+    monkeypatch.setattr(llm, "_get_client", lambda: None)
+    monkeypatch.setattr(llm, "CACHE_FILE", tmp_path / "cache.json")
+    monkeypatch.setattr(llm, "_cache", {})
+    monkeypatch.setattr(llm, "_demo", {})
+    assert llm.call_llm("sys", "another unique text 456") is None
