@@ -82,6 +82,9 @@ export function Layout() {
           </header>
           <main className="page-content" id="main-content" tabIndex={-1}>
             <Outlet />
+            <footer className="ai-disclosure-footer">
+              AI findings are suggestions. A human makes the final decision.
+            </footer>
           </main>
         </div>
       </div>
