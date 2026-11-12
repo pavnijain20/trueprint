@@ -43,7 +43,9 @@ export interface InsightsResponse {
     verdict: 'not_enough_data' | 'likely_unclear' | 'often_broken' | 'ok'
   }[]
   isSample?: boolean
-  dismissReasons?: string[]
+  realEvents?: unknown
+  sampleEvents?: unknown
+  dismissReasons?: (string | { sourceId?: unknown; reason?: unknown; sample?: unknown })[]
 }
 
 export interface ReliabilityResponse {
@@ -566,7 +568,16 @@ export async function getActivityFeed(): Promise<ActivityEvent[]> {
 }
 
 export async function getInsights(): Promise<InsightsResponse> {
-  return request<InsightsResponse>('/api/insights')
+  try {
+    // The summary endpoint separates real activity from sample history.
+    return await request<InsightsResponse>('/api/insights/summary')
+  } catch (error) {
+    // Older deployments only have /api/insights.
+    if (error instanceof ApiRequestError && (error.status === 404 || error.status === 405)) {
+      return request<InsightsResponse>('/api/insights')
+    }
+    throw error
+  }
 }
 
 function mockReliabilityResponse(): ReliabilityResponse {
