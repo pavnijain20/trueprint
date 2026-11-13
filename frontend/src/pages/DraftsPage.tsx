@@ -15,7 +15,7 @@ const tryThisSteps = [
   'Run AI review',
   'Accept or dismiss findings (dismissing needs a reason)',
   'Submit for review',
-  'Approve (switch role to Reviewer or Approver)',
+  'Approve (switch role to Approver; a Reviewer can only request changes)',
 ] as const
 
 const quickStartSteps: Record<Role, readonly string[]> = {
