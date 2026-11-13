@@ -1120,5 +1120,114 @@
  },
  "fb898139f7b3478ebeddbfbf8d8903b0dcb81dfe76ad6638c977479124bd2913": {
   "findings": []
+ },
+ "47f7c5880b0aef64de7a196d916d1a84ba944c37512e0afa475550faf230cfa0": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "Clinically proven to remove acne in 7 days.",
+    "reason": "Unsupported claim using unapproved medical/clinical terms and guarantees.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_02",
+     "quote": "Do not make medical, guaranteed, or unsupported product claims. Do not use these terms or claims unless the team has valid supporting evidence and approval: miracle, cure, 100% guaranteed, clinically proven, removes acne, works for every skin type, doctors recommend."
+    },
+    "suggested_fix": "Add an approved fact about acne results before making this claim",
+    "validated": true,
+    "start": 0,
+    "end": 43,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "ad6331b10dad8ea6f34e90148f1bbb8c1ba13b67d537ff07ffbf602c38fc819b": {
+  "findings": [
+   {
+    "category": "claim",
+    "flagged_text": "Enjoy free shipping on every order from our store.",
+    "reason": "Free shipping only applies to orders above Rs 499, making this claim unsupported.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F05",
+     "quote": "Orders of Rs 499 or less do not qualify for free shipping under the demo policy."
+    },
+    "suggested_fix": "Enjoy free shipping on orders above Rs 499.",
+    "validated": true,
+    "start": 0,
+    "end": 50,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "125f0d84a859d48ebc46149b8c4c0ba8aa473536066cf8102a84e3e0923dc88b": {
+  "findings": [
+   {
+    "category": "terminology",
+    "flagged_text": "Glow Leaf serum",
+    "reason": "The product name must be spelled GlowLeaf Serum.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "guideline",
+     "id": "guide_03",
+     "quote": "Always spell the product name exactly as GlowLeaf Serum. Never write Glow Leaf Serum, glowleaf serum or Glowleaf Serum."
+    },
+    "suggested_fix": "Our GlowLeaf Serum is great for your daily routine.",
+    "validated": true,
+    "start": 4,
+    "end": 19,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "359621a8a7ddb0bae4d3a874874524c430b6679894602dbaa20b78a75f792402": {
+  "findings": [
+   {
+    "category": "tone",
+    "flagged_text": "BUY NOW!!!",
+    "reason": "Pressure-based calls to action and excessive exclamation marks are not allowed.",
+    "severity": "high",
+    "confidence": 1.0,
+    "source": {
+     "type": "fact",
+     "id": "F10",
+     "quote": "The brand voice should avoid pressure-based calls to action."
+    },
+    "suggested_fix": "Get GlowLeaf Serum today.",
+    "validated": true,
+    "start": 0,
+    "end": 10,
+    "origin": "ai",
+    "agent": "fact",
+    "id": "f1",
+    "status": "open"
+   }
+  ]
+ },
+ "aa9c338b4ff63c27680f8d27e8fb05f8277774a8a58e01218f6fb9b3fb56ed02": {
+  "findings": []
+ },
+ "8dd73f60fee71ba55b43080fa5783e8b7b1283ca0907932c323bdfe7cea12f16": {
+  "revised": "Try GlowLeaf Serum today. Enjoy free shipping on orders above Rs 499.",
+  "missing_proof": "Clinical evidence and approved trial data are needed to support claims about removing acne or delivering results in 7 days."
+ },
+ "21d54f7e1a6d5298719e931094faa0b1d4c17ba88d3d54b2d0a111f224731f71": {
+  "findings": []
+ },
+ "808f96c9ae7f5f96b75cdc27640e0d752484739f06d46a8545276700a21298da": {
+  "findings": []
  }
 }

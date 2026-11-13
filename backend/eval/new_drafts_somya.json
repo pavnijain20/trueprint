@@ -1,0 +1,203 @@
+
+[
+  {
+    "draft": "Meet GlowLeaf Serum, our new daily serum. Explore the product details and share your feedback.",
+    "expected": []
+  },
+  {
+    "draft": "Discover our daily skincare range and learn more about GlowLeaf Serum.",
+    "expected": []
+  },
+  {
+    "draft": "Take a closer look at GlowLeaf Serum and explore its product information.",
+    "expected": []
+  },
+  {
+    "draft": "Our team has prepared a helpful guide to choosing your daily skincare routine.",
+    "expected": []
+  },
+  {
+    "draft": "Explore the latest product information before making your purchase.",
+    "expected": []
+  },
+  {
+    "draft": "We would love to hear what you think about our new product range.",
+    "expected": []
+  },
+  {
+    "draft": "Find practical information about our products on the official product page.",
+    "expected": []
+  },
+  {
+    "draft": "Learn more about GlowLeaf Serum and its ingredients through our product guide.",
+    "expected": []
+  },
+  {
+    "draft": "Our customer support team is available to help with product-related questions.",
+    "expected": []
+  },
+  {
+    "draft": "Explore our skincare collection and find information that helps you make an informed choice.",
+    "expected": []
+  },
+  {
+    "draft": "THIS IS THE BEST SERUM FOR YOUR DAILY ROUTINE!!!",
+    "expected": ["guide_01"]
+  },
+  {
+    "draft": "BUY NOW!!! DON'T MISS THIS AMAZING OPPORTUNITY!!!",
+    "expected": ["guide_01"]
+  },
+  {
+    "draft": "HURRY UP!!! GET YOUR FAVORITE PRODUCT TODAY!!!",
+    "expected": ["guide_01"]
+  },
+  {
+    "draft": "This serum is a miracle solution for acne and skin problems.",
+    "expected": ["guide_02"]
+  },
+  {
+    "draft": "Our serum cures acne and gives you perfect skin.",
+    "expected": ["guide_02"]
+  },
+  {
+    "draft": "Clinically proven to remove acne in seven days.",
+    "expected": ["guide_02"]
+  },
+  {
+    "draft": "Doctors recommend GlowLeaf Serum for every skin type.",
+    "expected": ["guide_02"]
+  },
+  {
+    "draft": "This product is 100% guaranteed to remove every skin problem.",
+    "expected": ["guide_02"]
+  },
+  {
+    "draft": "Try Glow Leaf Serum as part of your daily skincare routine.",
+    "expected": ["guide_03"]
+  },
+  {
+    "draft": "Discover our new glowleaf serum and explore its product details.",
+    "expected": ["guide_03"]
+  },
+  {
+    "draft": "Enjoy free shipping on every order with no minimum purchase.",
+    "expected": ["F04"]
+  },
+  {
+    "draft": "Every order qualifies for free delivery, regardless of its value.",
+    "expected": ["F04"]
+  },
+  {
+    "draft": "Get free shipping on all orders, with no minimum cart value.",
+    "expected": ["F04"]
+  },
+  {
+    "draft": "Our Winter Sale offer is still available: enjoy 20% off GlowLeaf Serum until November 20, 2026.",
+    "expected": ["F20"]
+  },
+  {
+    "draft": "The Winter Sale continues! Get 20% off GlowLeaf Serum through November 15, 2026.",
+    "expected": ["F20"]
+  },
+  {
+    "draft": "Shop the Winter Sale today and save 20% on GlowLeaf Serum until November 30, 2026.",
+    "expected": ["F20"]
+  },
+  {
+    "draft": "HURRY!!! Our miracle serum cures acne in seven days. BUY NOW!!!",
+    "expected": ["guide_01", "guide_02"]
+  },
+  {
+    "draft": "THIS SERUM IS CLINICALLY PROVEN TO REMOVE ACNE!!!",
+    "expected": ["guide_01", "guide_02"]
+  },
+  {
+    "draft": "Doctors recommend Glow Leaf Serum for every skin type.",
+    "expected": ["guide_02", "guide_03"]
+  },
+  {
+    "draft": "BUY NOW!!! Get free shipping on every order.",
+    "expected": ["guide_01", "F04"]
+  },
+  {
+    "draft": "Our miracle Glow Leaf Serum cures acne in seven days.",
+    "expected": ["guide_02", "guide_03"]
+  },
+  {
+    "draft": "HURRY!!! Get 20% off GlowLeaf Serum in our Winter Sale until November 25, 2026.",
+    "expected": ["guide_01", "F20"]
+  },
+  {
+    "draft": "THIS MIRACLE SERUM CURES ACNE!!! GET IT NOW!!!",
+    "expected": ["guide_01", "guide_02"]
+  },
+  {
+    "draft": "Get free shipping on all orders and enjoy our Winter Sale discount until November 18, 2026.",
+    "expected": ["F04", "F20"]
+  },
+  {
+    "draft": "Doctors recommend Glow Leaf Serum. BUY NOW!!!",
+    "expected": ["guide_01", "guide_02", "guide_03"]
+  },
+  {
+    "draft": "Our clinically proven miracle serum removes acne in seven days. HURRY!!!",
+    "expected": ["guide_01", "guide_02"]
+  },
+  {
+    "draft": "Enjoy free shipping on every order. This offer is guaranteed for all customers.",
+    "expected": ["F04", "guide_02"]
+  },
+  {
+    "draft": "The Winter Sale is back! Get 20% off GlowLeaf Serum until December 1, 2026. BUY NOW!!!",
+    "expected": ["guide_01", "F20"]
+  },
+  {
+    "draft": "Try our Glow Leaf Serum today. It is a miracle cure for acne.",
+    "expected": ["guide_02", "guide_03"]
+  },
+  {
+    "draft": "HURRY!!! Doctors recommend our miracle serum to cure acne for every skin type.",
+    "expected": ["guide_01", "guide_02"]
+  },
+  {
+    "draft": "Free shipping on every order! Get 20% off during our Winter Sale until November 21, 2026.",
+    "expected": ["F04", "F20"]
+  },
+  {
+    "draft": "THIS GLOW LEAF SERUM IS CLINICALLY PROVEN!!!",
+    "expected": ["guide_01", "guide_02", "guide_03"]
+  },
+  {
+    "draft": "Buy now!!! Our serum is guaranteed to remove acne for every skin type.",
+    "expected": ["guide_01", "guide_02"]
+  },
+  {
+    "draft": "The Winter Sale gives every customer free shipping and 20% off until November 28, 2026.",
+    "expected": ["F04", "F20"]
+  },
+  {
+    "draft": "HURRY!!! Get free shipping on every order with our Glow Leaf Serum.",
+    "expected": ["guide_01", "guide_03", "F04"]
+  },
+  {
+    "draft": "Our miracle GlowLeaf Serum is clinically proven to cure acne. BUY NOW!!!",
+    "expected": ["guide_01", "guide_02"]
+  },
+  {
+    "draft": "Enjoy 20% off GlowLeaf Serum in our Winter Sale until December 5, 2026. Doctors recommend it.",
+    "expected": ["guide_02", "F20"]
+  },
+  {
+    "draft": "THIS IS A GUARANTEED MIRACLE CURE FOR EVERY SKIN TYPE!!!",
+    "expected": ["guide_01", "guide_02"]
+  },
+  {
+    "draft": "Free shipping on all orders! Our Glow Leaf Serum is clinically proven to remove acne.",
+    "expected": ["guide_02", "guide_03", "F04"]
+  },
+  {
+    "draft": "HURRY!!! The Winter Sale offers 20% off GlowLeaf Serum and free shipping on every order until November 22, 2026.",
+    "expected": ["guide_01", "F04", "F20"]
+  }
+]
