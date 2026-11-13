@@ -15,7 +15,7 @@ Pre-publication brand governance. Every draft is checked against the brand's app
 - Knowledge base loaded from `backend/data/brand_kit.md` (synthetic GlowLeaf demo data).
 
 ## Round 3: the three improvements
-1. **Self-correcting agent.** The endpoint returns a suggested draft, up to 2 attempts, a "missing proof" note and `autoApplied: false`. Nothing changes until a person applies it. Checked on the live API with the saved demo draft `d_demo1` (HTTP 200, 1 attempt). A suggestion can reuse an approved fact that the original draft did not mention (for example the free-shipping fact); a person must review it.
+1. **Self-correcting agent.** The endpoint returns a suggested draft, up to 2 attempts, a "missing proof" note and `autoApplied: false`. Nothing changes until a person applies it. In the UI, the draft page shows a Suggested correction panel with a diff, the missing-proof note and an Apply button; Apply creates a new version, and nothing changes without it (checked by hand on one new draft). Wording of suggestions can be imperfect, so a person must review it. Checked on the live API with the saved demo draft `d_demo1` (HTTP 200, 1 attempt). A suggestion can reuse an approved fact that the original draft did not mention (for example the free-shipping fact); a person must review it.
 2. **Live Governance Insights and Guideline Clarity Score.** `GET /api/insights/summary` returns recurring categories, per-rule dismiss rate and a clarity score. While there are fewer than 6 real events it adds sample history, and the response says so (`isSample: true`, `realEvents`, `sampleEvents`, each sample dismiss reason has `sample: true`). On the live API right now it shows 0 real events and 16 sample events.
 3. **Reliability.** The expired-fact check is code. The labelled set has 74 drafts (24 earlier plus 50 added by the research teammate). `GET /api/reliability` serves `backend/eval/report.json`.
 
@@ -61,3 +61,4 @@ Frontend: set `VITE_API_URL` to the API URL (see `frontend/README.md`).
 - Retrieval is keyword search (SQLite FTS5); embeddings are not implemented.
 - Login is a demo role switch, not real authentication.
 - DOCX, PDF and image upload are not built.
+
