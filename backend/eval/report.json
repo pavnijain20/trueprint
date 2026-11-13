@@ -1,9 +1,9 @@
 {
  "summary": {
-  "drafts": 24,
+  "drafts": 37,
   "drafts_with_ai_error": 0,
-  "precision": 0.82,
-  "recall": 0.96,
+  "precision": 0.84,
+  "recall": 1.0,
   "unvalidated_citation_rate": 0.0
  },
  "rows": [
@@ -52,15 +52,17 @@
    "ai_error": null
   },
   {
-   "tp": 0,
+   "tp": 1,
    "fp": 0,
-   "fn": 1,
+   "fn": 0,
    "draft": "Enjoy 20% off GlowLeaf Serum in our Winter Sale!",
    "expected": [
     "F20"
    ],
-   "predicted": [],
-   "findings": 0,
+   "predicted": [
+    "F20"
+   ],
+   "findings": 1,
    "unvalidated": 0,
    "ai_error": null
   },
@@ -178,9 +180,10 @@
    ],
    "predicted": [
     "guide_02",
-    "guide_01"
+    "guide_01",
+    "guide_02"
    ],
-   "findings": 2,
+   "findings": 3,
    "unvalidated": 0,
    "ai_error": null
   },
@@ -274,9 +277,10 @@
    "predicted": [
     "guide_01",
     "guide_01",
+    "guide_01",
     "guide_01"
    ],
-   "findings": 3,
+   "findings": 4,
    "unvalidated": 0,
    "ai_error": null
   },
@@ -367,9 +371,171 @@
    "predicted": [
     "guide_03",
     "guide_01",
-    "guide_02"
+    "guide_02",
+    "guide_02",
+    "guide_01"
+   ],
+   "findings": 5,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "draft": "Meet GlowLeaf Serum, our new daily serum. Explore the product details and share your feedback.",
+   "expected": [],
+   "predicted": [],
+   "findings": 0,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "draft": "Discover our daily skincare range and learn more about GlowLeaf Serum.",
+   "expected": [],
+   "predicted": [],
+   "findings": 0,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "draft": "Take a closer look at GlowLeaf Serum and explore its product information.",
+   "expected": [],
+   "predicted": [],
+   "findings": 0,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "draft": "Our team has prepared a helpful guide to choosing your daily skincare routine.",
+   "expected": [],
+   "predicted": [],
+   "findings": 0,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "draft": "Explore the latest product information before making your purchase.",
+   "expected": [],
+   "predicted": [],
+   "findings": 0,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "draft": "We would love to hear what you think about our new product range.",
+   "expected": [],
+   "predicted": [],
+   "findings": 0,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "draft": "Find practical information about our products on the official product page.",
+   "expected": [],
+   "predicted": [],
+   "findings": 0,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "draft": "Learn more about GlowLeaf Serum and its ingredients through our product guide.",
+   "expected": [],
+   "predicted": [],
+   "findings": 0,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "draft": "Our customer support team is available to help with product-related questions.",
+   "expected": [],
+   "predicted": [],
+   "findings": 0,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "draft": "Explore our skincare collection and find information that helps you make an informed choice.",
+   "expected": [],
+   "predicted": [],
+   "findings": 0,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "draft": "THIS IS THE BEST SERUM FOR YOUR DAILY ROUTINE!!!",
+   "expected": [
+    "guide_01"
+   ],
+   "predicted": [
+    "guide_01",
+    "guide_01",
+    "guide_01"
    ],
    "findings": 3,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "draft": "BUY NOW!!! DON'T MISS THIS AMAZING OPPORTUNITY!!!",
+   "expected": [
+    "guide_01"
+   ],
+   "predicted": [
+    "guide_01",
+    "guide_01",
+    "guide_01"
+   ],
+   "findings": 3,
+   "unvalidated": 0,
+   "ai_error": null
+  },
+  {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "draft": "HURRY UP!!! GET YOUR FAVORITE PRODUCT TODAY!!!",
+   "expected": [
+    "guide_01"
+   ],
+   "predicted": [
+    "guide_01",
+    "guide_01"
+   ],
+   "findings": 2,
    "unvalidated": 0,
    "ai_error": null
   }
